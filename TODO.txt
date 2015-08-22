@@ -1,0 +1,31 @@
+X drawing garden
+X drawing plants
+X make plants grow
+X click to plant - lock to grid
+X click to harvest
+X random plant queue
+X make harvest group - logic based on type
+X sounds
+
+X switch to new performent ECS
+
+X remove types from components
+X remove translation from :foo to FooComponent
+X remove emit/consume event?
+X remove create
+X keep one global time, do not add to timers each tick
+X add scoring 
+X drop Component from the end of all components
+
+GUI?
+joy meter
+
+use named args everywhere
+
+add ladybug
+juice - joy particles from harvesting
+add 2x2 sized plants?
+add loner plants?
+
+=====
+need object pool for components?
