@@ -12,29 +12,38 @@ require_relative 'level'
 class PixelMonster < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
   def initialize
-    super(1200,900,false)
+    super(1024,1024,false)
 
     @entity_manager = EntityManager.new 
     @input_cacher = InputCacher.new
-    @level = Level.load('some_name.json')
+    @level_number = 0
+    @num_levels = 2
+    next_level
     build_systems
-    reset_level
   end
 
   def needs_cursor?
     false
   end
 
+  def next_level
+    @level_number = @level_number += 1
+
+    @level_number = 1 if @level_number > @num_levels
+
+    @level = Level.load("level#{@level_number}.png")
+    reset_level
+  end
+
   def reset_level
+    @level.reset! if @level
     @entity_manager = EntityManager.new 
-    @level.reset!
-    Prefab.test_level entity_manager: @entity_manager, x: 0, y: 800-17, map: @level.map
+    Prefab.level entity_manager: @entity_manager, level: @level
   end
 
   def build_systems
     @input_mapping_system = InputMappingSystem.new
-
-    @monster_system = MonsterSystem.new @level
+    @monster_system = MonsterSystem.new
 
     @click_system = ClickSystem.new
     @timer_system = TimerSystem.new
@@ -47,7 +56,8 @@ class PixelMonster < Gosu::Window
   end
 
   def update
-    reset_level if @level.complete?
+    next_level if @level.complete?
+    reset_level if @level.failed?
     self.caption = "FPS: #{Gosu.fps} ENTS: #{@entity_manager.num_entities}"
 
     millis = Gosu::milliseconds.to_f

@@ -18,10 +18,11 @@ class ParticlesEmitterSystem
       ent_id = rec.id
       evt, pos = rec.components
 
-      speed = (-10..10).to_a
+      speed = (-4..4).to_a
+      positions = (-10..10).to_a
       20.times do
-        entity_manager.add_entity pos.dup, Particle.new, 
-          JoyColor.new(evt.color), 
+        entity_manager.add_entity Position.new(pos.x+positions.sample, pos.y+positions.sample),
+          Particle.new, JoyColor.new(evt.color), 
           Velocity.new(speed.sample, speed.sample), Boxed.new(rand(3),rand(3))
       end
 
@@ -34,13 +35,15 @@ class MonsterSystem
   MAX_VEL = 15
   MIN_DIST = 40
   MIN_DIST_SQUARED = MIN_DIST * MIN_DIST
-
-  def initialize(level)
-    @level = level
-    @map = level.map
-  end
+  JUMPS = ['jump1.wav','jump2.wav']
+  COLLECT = 'collect.wav'
+  WIN_SOUND = 'exit.wav'
+  WRONG_COLOR = 'wrong_color.wav'
 
   def update(entity_manager, dt, input)
+    level = entity_manager.find(Level).first.get(Level)
+    map = level.map
+
     monster_rec = entity_manager.find(Monster, Position, JoyColor, Boxed, Velocity).first
     ent_id = monster_rec.id
     monster, monster_pos, monster_color, boxed, vel = monster_rec.components
@@ -50,16 +53,21 @@ class MonsterSystem
       monster_color.color = Gosu::Color::GREEN
     end
 
-    if input.down?(Gosu::KbR)
-      @level.complete!
+    if input.down?(Gosu::KbR) || monster_pos.y > 1100
+      level.failed!
     end
 
-    if in_exit?(monster_pos, boxed) && has_exit_color?(mc)
-      @level.complete!
+    if in_exit?(map, monster_pos, boxed) 
+      if has_exit_color?(map, mc)
+        entity_manager.add_entity SoundEffectEvent.new(WIN_SOUND)
+        level.complete!
+      else
+        # entity_manager.add_entity SoundEffectEvent.new(WRONG_COLOR)
+      end
     end
 
     speed = 70*dt/1000.0
-    on_ground = on_ground?(monster_pos, boxed)
+    on_ground = on_ground?(map, monster_pos, boxed)
     vel.y = 0 if on_ground
     lateral_speed = 2
     lateral_speed /= 0.5 unless on_ground
@@ -71,9 +79,9 @@ class MonsterSystem
     end
 
     if input.down?(Gosu::KbUp) && on_ground
+      entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
       vel.y -= 30
     else
-      # TODO gravity, break out sep velocity
       vel.y += 0.75
     end
 
@@ -94,10 +102,11 @@ class MonsterSystem
     h = boxed.height
     vel.x.round.abs.times do
       new_x = monster_pos.x + x_step
-      if @map.blocked?(new_x-w, monster_pos.y-h) ||
-        @map.blocked?(new_x+w, monster_pos.y-h) ||
-        @map.blocked?(new_x-w, monster_pos.y+h) ||
-        @map.blocked?(new_x+w, monster_pos.y+h)
+      if map.blocked?(new_x-w, monster_pos.y-h) ||
+        map.blocked?(new_x+w, monster_pos.y-h) ||
+        map.blocked?(new_x-w, monster_pos.y+h) ||
+        map.blocked?(new_x+w, monster_pos.y+h)
+        vel.x = 0
         break
       else
         monster_pos.x = new_x
@@ -107,10 +116,11 @@ class MonsterSystem
     y_step = vel.y < 0 ? -1 : 1
     vel.y.round.abs.times do
       new_y = monster_pos.y + y_step
-      if @map.blocked?(monster_pos.x-w, new_y-h) ||
-        @map.blocked?(monster_pos.x+w, new_y-h) ||
-        @map.blocked?(monster_pos.x-w, new_y+h) ||
-        @map.blocked?(monster_pos.x+w, new_y+h)
+      if map.blocked?(monster_pos.x-w, new_y-h) ||
+        map.blocked?(monster_pos.x+w, new_y-h) ||
+        map.blocked?(monster_pos.x-w, new_y+h) ||
+        map.blocked?(monster_pos.x+w, new_y+h)
+        vel.y = 0
         break
       else
         monster_pos.y = new_y
@@ -140,33 +150,35 @@ class MonsterSystem
         
         entity_manager.remove_entity src_id
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc)
+        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
       end
     end
   end
 
-  def has_exit_color?(color)
-    map_c = @map.exit_color
-    (color.red-map_c.red).abs < 10 &&
-    (color.green-map_c.green).abs < 10 &&
-    (color.blue-map_c.blue).abs < 10
+  def has_exit_color?(map, color)
+    allowed_diff = 20
+    map_c = map.exit_color
+    ((color.red-map_c.red).abs +
+    (color.green-map_c.green).abs +
+    (color.blue-map_c.blue).abs)/3.0 < allowed_diff 
   end
 
-  def in_exit?(pos, box)
+  def in_exit?(map, pos, box)
     x = pos.x
     y = pos.y
     w = box.width
     h = box.height
 
-    @map.in_exit?(pos.x-w, pos.y+h+1) || @map.in_exit?(pos.x+w, pos.y+h+1)
+    map.in_exit?(pos.x-w, pos.y+h) || map.in_exit?(pos.x+w, pos.y+h)
   end
 
-  def on_ground?(pos, box)
+  def on_ground?(map, pos, box)
     x = pos.x
     y = pos.y
     w = box.width
     h = box.height
 
-    @map.blocked?(pos.x-w, pos.y+h+1) || @map.blocked?(pos.x+w, pos.y+h+1)
+    map.blocked?(pos.x-w, pos.y+h+1) || map.blocked?(pos.x+w, pos.y+h+1)
   end
 
   def blend_colors(base: , absorbed: , weight:)
@@ -187,8 +199,16 @@ class ParticlesSystem
       pos.x += vel.x * scalar
       pos.y += vel.y * scalar
 
+      monster_rec = entity_manager.find(Monster, Position).first
+      monster_pos = monster_rec.get(Position)
+
+      dx = (monster_pos.x - pos.x) * scalar / 40
+      dy = (monster_pos.y - pos.y) * scalar / 40
+      vel.x += dx
+      vel.y += dy
+
       c = color.color
-      color.color = Gosu::Color.rgba(c.red,c.green,c.blue,c.alpha-10*scalar)
+      color.color = Gosu::Color.rgba(c.red,c.green,c.blue,c.alpha-20*scalar)
       entity_manager.remove_entity ent_id if color.color.alpha <= 0
     end
   end

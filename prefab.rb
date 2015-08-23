@@ -2,7 +2,11 @@ module Prefab
   include Gosu
   COLORS = [Color::AQUA,Color::BLUE,Color::CYAN,Color::FUCHSIA,Color::GRAY,Color::GREEN,Color::RED,Color::WHITE,Color::YELLOW]
 
-  def self.test_level(entity_manager:,x:,y:,map:)
+  def self.level(entity_manager:,level:)
+    # XXX there's gotta be a bettery way to do this
+    entity_manager.add_entity level
+    map = level.map
+
     tile_width = 32
     map.tiles.each do |c,ys|
       ys.each do |r,color|
@@ -14,12 +18,14 @@ module Prefab
       end
     end
 
-    monster_exit(entity_manager: entity_manager, 
+    monster_exit(entity_manager: entity_manager, color: map.exit_color,
                 x: map.exit_x*tile_width+16, 
-                y: map.exit_y*tile_width+16, 
-                color: map.exit_color )
+                y: map.exit_y*tile_width+16)
 
-    monster(entity_manager: entity_manager, x: x + 3 * tile_width, y: y-16-14-100, color: Color::GRAY)
+
+    monster(entity_manager: entity_manager, color: Color::GRAY,
+            x: map.player_x * tile_width+16, 
+            y: map.player_y * tile_width+16)
   end
 
   def self.monster_exit(entity_manager:,x:,y:,color:)
