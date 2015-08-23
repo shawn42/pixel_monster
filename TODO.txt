@@ -9,6 +9,7 @@ camera that follows player
 splash screen
 juice:
   particles slurp into Monster
+  make Monster jelly like and squishy
 
 builds
   windows

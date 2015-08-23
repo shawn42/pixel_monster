@@ -36,6 +36,7 @@ class MonsterSystem
   MIN_DIST_SQUARED = MIN_DIST * MIN_DIST
 
   def initialize(level)
+    @level = level
     @map = level.map
   end
 
@@ -45,8 +46,19 @@ class MonsterSystem
     monster, monster_pos, monster_color, boxed, vel = monster_rec.components
     mc = monster_color.color
 
-    speed = 70*dt/1000.0
+    if input.down?(Gosu::KbG)
+      monster_color.color = Gosu::Color::GREEN
+    end
 
+    if input.down?(Gosu::KbR)
+      @level.complete!
+    end
+
+    if in_exit?(monster_pos, boxed) && has_exit_color?(mc)
+      @level.complete!
+    end
+
+    speed = 70*dt/1000.0
     on_ground = on_ground?(monster_pos, boxed)
     vel.y = 0 if on_ground
     lateral_speed = 2
@@ -130,6 +142,22 @@ class MonsterSystem
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc)
       end
     end
+  end
+
+  def has_exit_color?(color)
+    map_c = @map.exit_color
+    (color.red-map_c.red).abs < 10 &&
+    (color.green-map_c.green).abs < 10 &&
+    (color.blue-map_c.blue).abs < 10
+  end
+
+  def in_exit?(pos, box)
+    x = pos.x
+    y = pos.y
+    w = box.width
+    h = box.height
+
+    @map.in_exit?(pos.x-w, pos.y+h+1) || @map.in_exit?(pos.x+w, pos.y+h+1)
   end
 
   def on_ground?(pos, box)

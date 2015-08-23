@@ -18,12 +18,17 @@ class PixelMonster < Gosu::Window
     @input_cacher = InputCacher.new
     @level = Level.load('some_name.json')
     build_systems
-
-    Prefab.test_level entity_manager: @entity_manager, x: 0, y: 800-17, map: @level.map
+    reset_level
   end
 
   def needs_cursor?
     false
+  end
+
+  def reset_level
+    @entity_manager = EntityManager.new 
+    @level.reset!
+    Prefab.test_level entity_manager: @entity_manager, x: 0, y: 800-17, map: @level.map
   end
 
   def build_systems
@@ -42,6 +47,7 @@ class PixelMonster < Gosu::Window
   end
 
   def update
+    reset_level if @level.complete?
     self.caption = "FPS: #{Gosu.fps} ENTS: #{@entity_manager.num_entities}"
 
     millis = Gosu::milliseconds.to_f
