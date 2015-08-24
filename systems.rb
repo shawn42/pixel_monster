@@ -49,8 +49,8 @@ class MonsterSystem
     monster, monster_pos, monster_color, boxed, vel = monster_rec.components
     mc = monster_color.color
 
-    if input.down?(Gosu::KbG)
-      monster_color.color = Gosu::Color::GREEN
+    if input.down?(Gosu::KbTab)
+      level.complete!
     end
 
     if input.down?(Gosu::KbR) || monster_pos.y > 1100

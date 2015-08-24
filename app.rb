@@ -17,7 +17,7 @@ class PixelMonster < Gosu::Window
     @entity_manager = EntityManager.new 
     @input_cacher = InputCacher.new
     @level_number = 0
-    @num_levels = 3
+    @num_levels = 4
     @music = Gosu::Song.new 'music.wav'
     next_level
     build_systems
