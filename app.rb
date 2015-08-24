@@ -18,6 +18,7 @@ class PixelMonster < Gosu::Window
     @input_cacher = InputCacher.new
     @level_number = 0
     @num_levels = 3
+    @music = Gosu::Song.new 'music.wav'
     next_level
     build_systems
   end
@@ -27,6 +28,8 @@ class PixelMonster < Gosu::Window
   end
 
   def next_level
+    @music.stop
+    @music.play true
     @level_number = @level_number += 1
 
     @level_number = 1 if @level_number > @num_levels
