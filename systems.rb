@@ -69,7 +69,7 @@ class MonsterSystem
     speed = 70*dt/1000.0
     on_ground = on_ground?(map, monster_pos, boxed)
     vel.y = 0 if on_ground
-    lateral_speed = 2
+    lateral_speed = 1.4
     lateral_speed /= 0.5 unless on_ground
 
     if input.down? Gosu::KbLeft
@@ -96,7 +96,6 @@ class MonsterSystem
       vel.y = -MAX_VEL
     end
 
-    # TODO use BB
     x_step = vel.x < 0 ? -1 : 1
     w = boxed.width
     h = boxed.height
