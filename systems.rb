@@ -101,7 +101,7 @@ class MonsterSystem
     w = boxed.width
     h = boxed.height
     vel.x.round.abs.times do
-      new_x = monster_pos.x + x_step
+      new_x = (monster_pos.x + x_step) % (1024-16)
       if map.blocked?(new_x-w, monster_pos.y-h) ||
         map.blocked?(new_x+w, monster_pos.y-h) ||
         map.blocked?(new_x-w, monster_pos.y+h) ||
@@ -145,7 +145,7 @@ class MonsterSystem
       dist = x_off*x_off+y_off*y_off
 
       if dist < MIN_DIST_SQUARED
-        blended_color = blend_colors(base: mc, absorbed: sc, weight: 0.1)
+        blended_color = blend_colors(base: mc, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
         
         entity_manager.remove_entity src_id

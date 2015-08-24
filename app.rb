@@ -17,7 +17,7 @@ class PixelMonster < Gosu::Window
     @entity_manager = EntityManager.new 
     @input_cacher = InputCacher.new
     @level_number = 0
-    @num_levels = 2
+    @num_levels = 3
     next_level
     build_systems
   end
@@ -31,7 +31,8 @@ class PixelMonster < Gosu::Window
 
     @level_number = 1 if @level_number > @num_levels
 
-    @level = Level.load("level#{@level_number}.png")
+    filename = "level#{@level_number}.png"
+    @level = Level.load(filename)
     reset_level
   end
 
