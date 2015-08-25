@@ -9,6 +9,7 @@ class Level
     png = ChunkyPNG::Image.from_file filename
     map.exit_color = gosu_color_from_value png[0,0]
 
+    colors = []
     png.width.times do |c|
       (png.height-1).times do |r|
         v = png[c,r+1]
@@ -21,11 +22,17 @@ class Level
             map.exit_x = c
             map.exit_y = r+1
           else
+            colors << gosu_color
             map.tiles[c][r+1] = gosu_color
           end
         end
       end
     end
+
+    avg_red = colors.collect(&:red).sum / colors.size.to_f
+    avg_green = colors.collect(&:green).sum / colors.size.to_f
+    avg_blue = colors.collect(&:blue).sum / colors.size.to_f
+    map.average_color = Gosu::Color.rgba(avg_red, avg_green, avg_blue, 255)
 
     level
   end
@@ -69,23 +76,9 @@ class Map
   TILE_SIZE = 32
   attr_accessor :tiles, 
     :exit_x, :exit_y, :exit_color,
-    :player_x, :player_y
+    :player_x, :player_y, :average_color
   def initialize
-#     @exit_x = 14
-#     @exit_y = 21
-#     @exit_color = Gosu::Color::YELLOW
     @tiles = Hash.new{|h,k|h[k] = {}}
-#     10.times do |i|
-#       @tiles[i][24] = Gosu::Color::BLUE
-#     end
-#
-#     10.times do |i|
-#       @tiles[20+i][24] = Gosu::Color::RED
-#     end
-#
-#     80.times do |i|
-#       @tiles[i-10][26] = Gosu::Color::YELLOW
-#     end
   end
 
   def blocked?(world_x, world_y)

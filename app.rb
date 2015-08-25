@@ -56,6 +56,7 @@ class PixelMonster < Gosu::Window
 
     @particles_emitter_system = ParticlesEmitterSystem.new
     @particles_system = ParticlesSystem.new
+    @background_system = BackgroundSystem.new
     @render_system = RenderSystem.new
   end
 
@@ -85,6 +86,7 @@ class PixelMonster < Gosu::Window
 
       @particles_emitter_system.update @entity_manager, delta, input_snapshot
       @particles_system.update @entity_manager, delta, input_snapshot
+      @background_system.update @entity_manager, delta, input_snapshot
 
     end
 

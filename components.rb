@@ -1,3 +1,4 @@
+class BackgroundBlob; end
 class Monster; end
 class ColorSource; end
 class Clickable; end
