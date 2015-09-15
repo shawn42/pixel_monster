@@ -32,6 +32,10 @@ class ParticlesEmitterSystem
 end
 
 class MonsterSystem
+  SQUISH_MAX = 8
+  SQUISH_DURATION = 150
+  PEAK_DURATION = SQUISH_DURATION / 4.0
+
   MAX_VEL = 15
   MIN_DIST = 40
   MIN_DIST_SQUARED = MIN_DIST * MIN_DIST
@@ -68,6 +72,8 @@ class MonsterSystem
 
     speed = 70*dt/1000.0
     on_ground = on_ground?(map, monster_pos, boxed)
+    old_y_vel = vel.y
+
     vel.y = 0 if on_ground
     lateral_speed = 1.4
     lateral_speed /= 0.5 unless on_ground
@@ -78,7 +84,10 @@ class MonsterSystem
       vel.x += lateral_speed
     end
 
+
+    jumping = false
     if input.down?(Gosu::KbUp) && on_ground
+      jumping = true
       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
       vel.y -= 30
     else
@@ -112,6 +121,7 @@ class MonsterSystem
       end
     end
 
+    y_hit = nil
     y_step = vel.y < 0 ? -1 : 1
     vel.y.round.abs.times do
       new_y = monster_pos.y + y_step
@@ -120,6 +130,7 @@ class MonsterSystem
         map.blocked?(monster_pos.x-w, new_y+h) ||
         map.blocked?(monster_pos.x+w, new_y+h)
         vel.y = 0
+        y_hit = vel.y
         break
       else
         monster_pos.y = new_y
@@ -131,6 +142,29 @@ class MonsterSystem
     else
       vel.x *= 0.7
     end
+
+    if (y_hit && old_y_vel.abs > 0) || jumping
+      boxed.squished_at = Gosu.milliseconds
+      boxed.squish_height = (([old_y_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
+      boxed.squish_dir = old_y_vel > 0 ? 1 : -1
+    end
+
+    if boxed.squished_at
+      squish_dt = Gosu.milliseconds - boxed.squished_at
+      if squish_dt < SQUISH_DURATION
+        if squish_dt < PEAK_DURATION
+          boxed.squish_amount = (boxed.squish_height * (squish_dt/PEAK_DURATION))#.floor
+        else
+          boxed.squish_amount = (boxed.squish_height * (1.0-(squish_dt-PEAK_DURATION)/(SQUISH_DURATION - PEAK_DURATION)))#.floor
+        end
+      else
+        boxed.squished_at = nil
+        boxed.squish_amount = 0
+        boxed.squish_amount = 0
+        boxed.squish_dir = 0
+      end
+    end
+
 
 
     # ColorStuffSystem
@@ -180,10 +214,30 @@ class MonsterSystem
     map.blocked?(pos.x-w, pos.y+h+1) || map.blocked?(pos.x+w, pos.y+h+1)
   end
 
+  def reflectance(absorbtionRatio)
+		1.0 + absorbtionRatio - Math.sqrt(absorbtionRatio * absorbtionRatio + (2.0 * absorbtionRatio))
+  end
+
   def blend_colors(base: , absorbed: , weight:)
+    # return ColorMix.mix(base, absorbed)
+
+    # ORGINAL:
     red = base.red + (absorbed.red - base.red)*weight
     green = base.green + (absorbed.green - base.green)*weight
     blue = base.blue + (absorbed.blue - base.blue)*weight
+
+    # red = (base.red * 0.875 + absorbed.red * 0.125
+    # green = base.green * 0.875 + absorbed.green * 0.125
+    # blue = base.blue * 0.875 + absorbed.blue * 0.125
+
+    # red = base.red + absorbed.red * weight
+    # green = base.green + absorbed.green * weight
+    # blue = base.blue + absorbed.blue * weight
+
+    # max = [red,green,blue].max.to_f
+    # red = (red / max * 255).round
+    # green = (green / max * 255).round
+    # blue = (blue / max * 255).round
 
     Gosu::Color.rgba(red, green, blue, base.alpha)
   end
@@ -321,13 +375,16 @@ class RenderSystem
     entity_manager.each_entity Position, JoyColor, Boxed do |rec|
       pos, color, boxed = rec.components
       ent_id = rec.id
+      y_off = (boxed.squish_amount * boxed.squish_dir / 2.0)#.floor
+      squish = (boxed.squish_amount / 2.0)#.floor
+
       c1 = c2 = c3 = c4 = color.color
       x1 = pos.x - boxed.width
-      y1 = pos.y - boxed.height
+      y1 = pos.y - boxed.height + y_off + squish
       x2 = pos.x + boxed.width
       y2 = y1
       x3 = x2
-      y3 = pos.y + boxed.height
+      y3 = pos.y + boxed.height + y_off - squish
       x4 = x1
       y4 = y3
       target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, 2)
@@ -347,6 +404,90 @@ class RenderSystem
     #   z = 99
     #   @font.draw s.points, pos.x, pos.y, z, 1, 1, c.color
     # end
+    # EEWWW
+    rec = entity_manager.find(Monster, Position, JoyColor, Debug).first
+    if rec
+      mon, pos, color, d = rec.components
+      c = color.color
+      x = 20
+      y = 1024
+      full_h = 60
+
+      r = Gosu::Color::RED
+      g = Gosu::Color::GREEN
+      b = Gosu::Color::BLUE
+      h = (c.red / 255.0 * full_h).round
+      target.draw_quad(x, y, r, x, y-h, r, x+20, y-h, r, x+20, y, r, 3)
+
+      h = (c.green / 255.0 * full_h).round
+      target.draw_quad(x+20, y, g, x+20, y-h, g, x+40, y-h, g, x+40, y, g, 3)
+
+      h = (c.blue / 255.0 * full_h).round
+      target.draw_quad(x+40, y, b, x+40, y-h, b, x+60, y-h, b, x+60, y, b, 3)
+    end
+
+
   end
+end
+
+CMYK = Struct.new(:c,:m,:y,:k,:a)
+
+class ColorMix
+  def self.to_cymk(color)
+    cyan    = 255 - color.red
+    magenta = 255 - color.green
+    yellow  = 255 - color.blue
+    black   = [cyan, magenta, yellow].min
+    cyan    = ((cyan - black) / (255 - black))
+    magenta = ((magenta - black) / (255 - black))
+    yellow  = ((yellow  - black) / (255 - black))
+
+    CMYK.new cyan, magenta, yellow, black/255, color.alpha
+  end
+
+  def self.to_rgba(color)
+    r = color.c * (1.0 - color.k) + color.k
+    g = color.m * (1.0 - color.k) + color.k
+    b = color.y * (1.0 - color.k) + color.k
+    r = ((1.0 - r) * 255.0 + 0.5).round
+    g = ((1.0 - g) * 255.0 + 0.5).round
+    b = ((1.0 - b) * 255.0 + 0.5).round
+
+    Gosu::Color.rgba(r,g,b,color.a)
+  end
+
+  def self.mix(color1, color2)
+    c = 0
+    m = 0
+    y = 0
+    k = 0
+    a = 0
+    colors = [ColorMix.to_cymk(color1), 
+      ColorMix.to_cymk(color2)]
+
+    colors.each do |color|
+      c += color.c
+      m += color.m
+      y += color.y
+      k += color.k
+      a += color.a
+    end
+    c = c/colors.size.to_f
+    m = m/colors.size.to_f
+    y = y/colors.size.to_f
+    k = k/colors.size.to_f
+    a = a/colors.size.to_f
+    color = CMYK.new c, m, y, k, a
+    ColorMix.to_rgba(color)
+  end
+end
+def pretty_color(c)
+  "[#{c.red},#{c.green},#{c.blue}]"
+end
+
+if $0 == __FILE__
+  require 'gosu'
+  puts pretty_color( ColorMix.mix(Gosu::Color::RED, Gosu::Color::YELLOW) )
+  puts pretty_color( ColorMix.mix(Gosu::Color::BLUE, Gosu::Color::YELLOW) )
 end
 

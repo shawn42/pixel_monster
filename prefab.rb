@@ -23,7 +23,7 @@ module Prefab
                 y: map.exit_y*tile_width+16)
 
 
-    monster(entity_manager: entity_manager, color: Color::GRAY,
+    monster(entity_manager: entity_manager, color: Color::WHITE,
             x: map.player_x * tile_width+16, 
             y: map.player_y * tile_width+16)
   end
@@ -43,7 +43,7 @@ module Prefab
 
   def self.monster(entity_manager:,x:,y:,color:)
     entity_manager.add_entity Monster.new, JoyColor.new(color), Boxed.new(14, 14),
-      Position.new(x, y), Velocity.new
+      Position.new(x, y), Velocity.new, Debug.new
   end
 
 end

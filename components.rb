@@ -1,3 +1,4 @@
+class Debug; end
 class BackgroundBlob; end
 class Monster; end
 class ColorSource; end
@@ -34,10 +35,13 @@ class JoyColor
 end
 
 class Boxed
-  attr_accessor :width, :height
+  attr_accessor :width, :height, :squished_at, :squish_height, :squish_amount, :squish_dir
   def initialize(width,height)
     @width = width
     @height = height
+    @squish_height = 0
+    @squish_amount = 0
+    @squish_dir = 0
   end
 end
 

@@ -21,6 +21,9 @@ class Level
           elsif gosu_color == Gosu::Color::BLACK
             map.exit_x = c
             map.exit_y = r+1
+          # elsif gosu_color == Gosu::Color::BLUE
+          #   colors << Gosu::Color.rgba(0, 0xC2, 0x39, 255)
+          #   map.tiles[c][r+1] = gosu_color
           else
             colors << gosu_color
             map.tiles[c][r+1] = gosu_color
