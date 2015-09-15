@@ -377,11 +377,12 @@ class RenderSystem
       ent_id = rec.id
       y_off = (boxed.squish_amount * boxed.squish_dir / 2.0)#.floor
       squish = (boxed.squish_amount / 2.0)#.floor
+      half_squish = squish / 2.0
 
       c1 = c2 = c3 = c4 = color.color
-      x1 = pos.x - boxed.width
+      x1 = pos.x - boxed.width - half_squish
       y1 = pos.y - boxed.height + y_off + squish
-      x2 = pos.x + boxed.width
+      x2 = pos.x + boxed.width + half_squish
       y2 = y1
       x3 = x2
       y3 = pos.y + boxed.height + y_off - squish
