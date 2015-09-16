@@ -15,17 +15,17 @@ module Enumerable
 end
 
 class ParticlesEmitterSystem
+  SPEED = (-3..3).to_a
+  POSITIONS = (-15..15).to_a
   def update(entity_manager, dt, input)
     entity_manager.each_entity(EmitParticlesEvent, Position) do |rec|
       ent_id = rec.id
       evt, pos = rec.components
 
-      speed = (-4..4).to_a
-      positions = (-10..10).to_a
-      20.times do
-        entity_manager.add_entity Position.new(pos.x+positions.sample, pos.y+positions.sample, 3),
+      25.times do
+        entity_manager.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
           Particle.new, JoyColor.new(evt.color), 
-          Velocity.new(speed.sample, speed.sample), Boxed.new(rand(3),rand(3))
+          Velocity.new(SPEED.sample, SPEED.sample), Boxed.new(rand(3),rand(3))
       end
 
       entity_manager.remove_component klass: EmitParticlesEvent, id: ent_id
@@ -286,7 +286,7 @@ class ParticlesSystem
       dy = (monster_pos.y - pos.y) * scalar / 40
       vel.x += dx
       vel.y += dy
-
+      
       c = color.color
       color.color = Gosu::Color.rgba(c.red,c.green,c.blue,c.alpha-20*scalar)
       entity_manager.remove_entity ent_id if color.color.alpha <= 0
