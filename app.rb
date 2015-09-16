@@ -49,7 +49,6 @@ class PixelMonster < Gosu::Window
     @input_mapping_system = InputMappingSystem.new
     @monster_system = MonsterSystem.new
 
-    @click_system = ClickSystem.new
     @timer_system = TimerSystem.new
 
     @sound_system = SoundSystem.new
@@ -78,7 +77,6 @@ class PixelMonster < Gosu::Window
       @input_mapping_system.update @entity_manager, delta, input_snapshot
 
       @monster_system.update @entity_manager, delta, input_snapshot
-      @click_system.update @entity_manager, delta, input_snapshot
 
       @timer_system.update @entity_manager, millis, input_snapshot
 

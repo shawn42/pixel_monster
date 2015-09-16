@@ -96,7 +96,7 @@ class MonsterSystem
     old_y_vel = vel.y
 
     vel.y = 0 if on_ground
-    lateral_speed = 1.4
+    lateral_speed = 1.0
     lateral_speed /= 0.5 unless on_ground
 
     if input.down?(Gosu::KbLeft) || input.down?(Gosu::GpLeft)

@@ -2,7 +2,6 @@ class Debug; end
 class BackgroundBlob; end
 class Monster; end
 class ColorSource; end
-class Clickable; end
 class Particle; end
 class EmitParticlesEvent
   attr_accessor :color
@@ -71,13 +70,6 @@ class Timer
   end
 end
 
-class ClickedEvent
-  attr_reader :x, :y
-  def initialize(x:,y:)
-    @x = x
-    @y = y
-  end
-end
 class SoundEffectEvent
   attr_accessor :sound_to_play
   def initialize(sound_to_play)
