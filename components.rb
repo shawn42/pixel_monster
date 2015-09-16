@@ -12,10 +12,11 @@ class EmitParticlesEvent
 end
 
 class Position
-  attr_accessor :x, :y
-  def initialize(x,y)
+  attr_accessor :x, :y, :z
+  def initialize(x,y,z=2)
     @x = x
     @y = y
+    @z = z
   end
 end
 

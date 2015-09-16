@@ -1,10 +1,11 @@
 require 'set'
 
 class InputCacher
-  attr_reader :down_ids
+  attr_reader :down_ids, :total_time
   attr_accessor :mouse_pos
 
-  def initialize(down_ids = nil, mouse_pos = nil)
+  def initialize(total_time = 0, down_ids = nil, mouse_pos = nil)
+    @total_time = total_time
     @down_ids = down_ids || Set.new
     @mouse_pos = mouse_pos
   end
@@ -21,8 +22,8 @@ class InputCacher
     @down_ids.include? id
   end
 
-  def snapshot
-    InputCacher.new(@down_ids.dup, @mouse_pos.dup).freeze
+  def snapshot(total_time)
+    InputCacher.new(total_time, @down_ids.dup, @mouse_pos.dup).freeze
   end
 end
 

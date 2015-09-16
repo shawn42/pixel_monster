@@ -2,8 +2,10 @@
 class Array
   def x; at(0) end
   def y; at(1) end
+  def z; at(2) end
   def x=(x); self[0] = x end
   def y=(y); self[1] = y end
+  def z=(z); self[2] = z end
 end
 
 module Enumerable
@@ -21,7 +23,7 @@ class ParticlesEmitterSystem
       speed = (-4..4).to_a
       positions = (-10..10).to_a
       20.times do
-        entity_manager.add_entity Position.new(pos.x+positions.sample, pos.y+positions.sample),
+        entity_manager.add_entity Position.new(pos.x+positions.sample, pos.y+positions.sample, 3),
           Particle.new, JoyColor.new(evt.color), 
           Velocity.new(speed.sample, speed.sample), Boxed.new(rand(3),rand(3))
       end
@@ -144,13 +146,13 @@ class MonsterSystem
     end
 
     if (y_hit && old_y_vel.abs > 0) || jumping
-      boxed.squished_at = Gosu.milliseconds
+      boxed.squished_at = input.total_time
       boxed.squish_height = (([old_y_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
       boxed.squish_dir = old_y_vel > 0 ? 1 : -1
     end
 
     if boxed.squished_at
-      squish_dt = Gosu.milliseconds - boxed.squished_at
+      squish_dt = input.total_time - boxed.squished_at
       if squish_dt < SQUISH_DURATION
         if squish_dt < PEAK_DURATION
           boxed.squish_amount = (boxed.squish_height * (squish_dt/PEAK_DURATION))#.floor
@@ -349,7 +351,7 @@ class BackgroundSystem
       x = [0 + rand(400), 1024 - rand(400)].sample
       y = [0 + rand(400), 1024 - rand(400)].sample
       color = Gosu::Color.rgba(c.red+rand(10)-5,c.green+rand(10)-5,c.blue+rand(10)-5,rand(10..70))
-      entity_manager.add_entity Position.new(x,y),
+      entity_manager.add_entity Position.new(x,y,0),
         Boxed.new(rand(100..300),rand(100..300)), JoyColor.new(color),
         Velocity.new(rand(10)-5,rand(10)-5), BackgroundBlob.new
     end
@@ -388,7 +390,7 @@ class RenderSystem
       y3 = pos.y + boxed.height + y_off - squish
       x4 = x1
       y4 = y3
-      target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, 2)
+      target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, pos.z)
     end
 
     # entity_manager.each_entity Position, JoyImage do |rec|

@@ -74,7 +74,7 @@ class PixelMonster < Gosu::Window
       delta = MAX_UPDATE_SIZE_IN_MILLIS if delta > MAX_UPDATE_SIZE_IN_MILLIS
 
       @input_cacher.mouse_pos = {x: mouse_x, y: mouse_y}
-      input_snapshot = @input_cacher.snapshot
+      input_snapshot = @input_cacher.snapshot millis
       @input_mapping_system.update @entity_manager, delta, input_snapshot
 
       @monster_system.update @entity_manager, delta, input_snapshot
