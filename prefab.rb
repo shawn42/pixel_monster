@@ -29,8 +29,8 @@ module Prefab
   end
 
   def self.monster_exit(entity_manager:,x:,y:,color:)
-      entity_manager.add_entity JoyColor.new(color), Position.new(x, y), Boxed.new(14,14)
-      entity_manager.add_entity JoyColor.new(Color::BLACK), Position.new(x, y), Boxed.new(8,8)
+      entity_manager.add_entity Exit.new, JoyColor.new(color), Position.new(x, y), Boxed.new(14,14)
+      entity_manager.add_entity Exit.new, JoyColor.new(Color::BLACK), Position.new(x, y), Boxed.new(8,8)
   end
 
   def self.color_source(entity_manager:,x:,y:,color:)

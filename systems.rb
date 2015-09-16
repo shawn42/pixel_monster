@@ -63,8 +63,27 @@ class MonsterSystem
       level.failed!
     end
 
+    has_exit_color = has_exit_color?(map, mc)
+    exit_recs = entity_manager.find(Exit, Position, JoyColor, Boxed)
+    exit_recs.each do |exit_rec|
+      ex, exit_pos, exit_color, exit_boxed = exit_rec.components
+      open = ex.open
+      if has_exit_color && !open
+        ex.open = true
+        exit_boxed.height += 8
+        exit_boxed.width += 8
+        exit_pos.y -= 8
+      end
+      if open && !has_exit_color
+        ex.open = false
+        exit_boxed.height -= 8
+        exit_boxed.width -= 8
+        exit_pos.y += 8
+      end
+    end
+
     if in_exit?(map, monster_pos, boxed) 
-      if has_exit_color?(map, mc)
+      if has_exit_color
         entity_manager.add_entity SoundEffectEvent.new(WIN_SOUND)
         level.complete!
       else

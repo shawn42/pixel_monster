@@ -10,6 +10,12 @@ class EmitParticlesEvent
     @color = color
   end
 end
+class Exit
+  attr_accessor :open
+  def initialize(open:false)
+    @open = open
+  end
+end
 
 class Position
   attr_accessor :x, :y, :z
