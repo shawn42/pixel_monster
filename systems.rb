@@ -99,15 +99,15 @@ class MonsterSystem
     lateral_speed = 1.4
     lateral_speed /= 0.5 unless on_ground
 
-    if input.down? Gosu::KbLeft
+    if input.down?(Gosu::KbLeft) || input.down?(Gosu::GpLeft)
       vel.x -= lateral_speed
-    elsif input.down? Gosu::KbRight
+    elsif input.down?(Gosu::KbRight) || input.down?(Gosu::GpRight)
       vel.x += lateral_speed
     end
 
 
     jumping = false
-    if input.down?(Gosu::KbUp) && on_ground
+    if (input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)) && on_ground
       jumping = true
       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
       vel.y -= 30
@@ -319,7 +319,7 @@ end
 
 class InputMappingSystem
   def update(entity_manager, dt, input)
-    exit if input.down?(Gosu::KbEscape)
+    exit if input.down?(Gosu::KbEscape) || input.down?(Gosu::GpButton4)
     # entity_manager.each_entity KeyboardControl, Controls do |rec|
     #   keys, control = rec.components
     #   ent_id = rec.id
@@ -328,30 +328,6 @@ class InputMappingSystem
     #   control.move_up = input.down?(keys.move_up)
     #   control.move_down = input.down?(keys.move_down)
     # end
-  end
-end
-
-class ClickSystem
-  def initialize
-    @up = true
-  end
-  # TODO this should be handled at the "input" layer
-
-  def update(entity_manager, dt, input)
-    mouse_x = input.mouse_pos[:x]
-    mouse_y = input.mouse_pos[:y]
-    mouse_down = input.down?(Gosu::MsLeft)
-    if @up && mouse_down
-      @up = false
-      entity_manager.each_entity Clickable, Boxed, Position do |rec|
-        clickable, boxed, pos = rec.components
-        ent_id = rec.id
-        if (mouse_x - pos.x).abs < boxed.width and (mouse_y - pos.y).abs < boxed.height
-          entity_manager.add_component component: ClickedEvent.new(x: mouse_x, y: mouse_y), id: ent_id
-        end
-      end
-    end
-    @up = true if !mouse_down
   end
 end
 
