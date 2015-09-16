@@ -34,9 +34,10 @@ class ParticlesEmitterSystem
 end
 
 class MonsterSystem
-  SQUISH_MAX = 8
-  SQUISH_DURATION = 150
-  PEAK_DURATION = SQUISH_DURATION / 4.0
+  JUMP_FORGIVENESS = 100 #ms
+  SQUISH_MAX = 8 #px
+  SQUISH_DURATION = 150 #ms
+  PEAK_DURATION = SQUISH_DURATION / 4.0 #ms
 
   MAX_VEL = 15
   MIN_DIST = 40
@@ -50,9 +51,9 @@ class MonsterSystem
     level = entity_manager.find(Level).first.get(Level)
     map = level.map
 
-    monster_rec = entity_manager.find(Monster, Position, JoyColor, Boxed, Velocity).first
+    monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     ent_id = monster_rec.id
-    monster, monster_pos, monster_color, boxed, vel = monster_rec.components
+    monster, monster_platform, monster_pos, monster_color, boxed, vel = monster_rec.components
     mc = monster_color.color
 
     if input.down?(Gosu::KbTab)
@@ -93,6 +94,8 @@ class MonsterSystem
 
     speed = 70*dt/1000.0
     on_ground = on_ground?(map, monster_pos, boxed)
+    monster_platform.last_grounded_at = input.total_time if on_ground
+
     old_y_vel = vel.y
 
     vel.y = 0 if on_ground
@@ -107,8 +110,12 @@ class MonsterSystem
 
 
     jumping = false
-    if (input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)) && on_ground
+    can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
+    can_jump &= vel.y <= 2.5
+    if (input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)) && can_jump
+      puts vel.y
       jumping = true
+      monster_platform.last_grounded_at = -1
       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
       vel.y -= 30
     else
@@ -170,7 +177,8 @@ class MonsterSystem
       boxed.squish_dir = old_y_vel > 0 ? 1 : -1
     end
 
-    if (y_hit && old_y_vel.abs > 0)# || jumping
+    if (y_hit && old_y_vel.abs > 0)
+      entity_manager.add_entity SoundEffectEvent.new(COLLECT) # TODO new sound for hitting?
       boxed.squished_at = input.total_time
       boxed.squish_height = (([old_y_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
       boxed.squish_dir = old_y_vel > 0 ? 1 : -1

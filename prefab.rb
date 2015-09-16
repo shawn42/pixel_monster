@@ -43,7 +43,7 @@ module Prefab
 
   def self.monster(entity_manager:,x:,y:,color:)
     entity_manager.add_entity Monster.new, JoyColor.new(color), Boxed.new(14, 14),
-      Position.new(x, y), Velocity.new, Debug.new
+      Position.new(x, y), Velocity.new, PlatformPosition.new, Debug.new
   end
 
 end
