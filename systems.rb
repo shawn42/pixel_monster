@@ -145,7 +145,13 @@ class MonsterSystem
       vel.x *= 0.7
     end
 
-    if (y_hit && old_y_vel.abs > 0) || jumping
+    if jumping
+      boxed.squished_at = input.total_time
+      boxed.squish_height = ((-36/MAX_VEL.to_f)*SQUISH_MAX)#.floor
+      boxed.squish_dir = old_y_vel > 0 ? 1 : -1
+    end
+
+    if (y_hit && old_y_vel.abs > 0)# || jumping
       boxed.squished_at = input.total_time
       boxed.squish_height = (([old_y_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
       boxed.squish_dir = old_y_vel > 0 ? 1 : -1
