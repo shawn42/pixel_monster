@@ -40,7 +40,7 @@ class MonsterSystem
   PEAK_DURATION = SQUISH_DURATION / 4.0 #ms
 
   MAX_VEL = 15
-  MIN_DIST = 40
+  MIN_DIST = 44
   MIN_DIST_SQUARED = MIN_DIST * MIN_DIST
   JUMPS = ['jump1.wav','jump2.wav']
   COLLECT = 'collect.wav'
