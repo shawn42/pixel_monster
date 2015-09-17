@@ -113,7 +113,6 @@ class MonsterSystem
     can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
     can_jump &= vel.y <= 2.5
     if (input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)) && can_jump
-      puts vel.y
       jumping = true
       monster_platform.last_grounded_at = -1
       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
