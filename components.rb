@@ -17,10 +17,9 @@ class Exit
 end
 
 class PlatformPosition
-  attr_accessor :on_ground, :last_grounded_at
+  attr_accessor :last_grounded_at
   def initialize
-    @on_ground = false
-    @last_grounded_at = -9999
+    @last_grounded_at = -1
   end
 end
 

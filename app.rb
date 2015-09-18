@@ -9,6 +9,7 @@ require_relative 'entity_manager'
 require_relative 'input_cacher'
 require_relative 'level'
 
+
 class PixelMonster < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
   def initialize
@@ -16,8 +17,8 @@ class PixelMonster < Gosu::Window
 
     @entity_manager = EntityManager.new 
     @input_cacher = InputCacher.new
-    @level_number = (ARGV[0] || 0).to_i
-    @num_levels = 7
+    @level_number = (ARGV[0] || 1).to_i - 1
+    @num_levels = 8
     @music = Gosu::Song.new 'music.wav'
     next_level
     build_systems
@@ -105,7 +106,8 @@ class PixelMonster < Gosu::Window
   def button_up(id)
     @input_cacher.button_up id
   end
-
 end
 
-PixelMonster.new.show
+if $0 == __FILE__
+  PixelMonster.new.show
+end
