@@ -56,7 +56,7 @@ class MonsterSystem
     monster, monster_platform, monster_pos, monster_color, boxed, vel = monster_rec.components
     mc = monster_color.color
 
-    if input.down?(Gosu::KbTab)
+    if input.pressed?(Gosu::KbTab)
       level.complete!
     end
 
@@ -302,7 +302,8 @@ class ParticlesSystem
 end
 
 class TimerSystem
-  def update(entity_manager, current_time_ms, input)
+  def update(entity_manager, delta, input)
+    current_time_ms = input.total_time
     entity_manager.each_entity Timer do |rec|
       timer = rec.get(Timer)
       ent_id = rec.id

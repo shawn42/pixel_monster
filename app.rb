@@ -65,31 +65,32 @@ class PixelMonster < Gosu::Window
     reset_level if @level.failed?
     self.caption = "FPS: #{Gosu.fps} ENTS: #{@entity_manager.num_entities}"
 
-    millis = Gosu::milliseconds.to_f
+    total_millis = Gosu::milliseconds.to_f
 
     # ignore the first update
     if @last_millis
-      delta = millis
-      delta -= @last_millis if millis > @last_millis
+      delta = total_millis
+      delta -= @last_millis if total_millis > @last_millis
       delta = MAX_UPDATE_SIZE_IN_MILLIS if delta > MAX_UPDATE_SIZE_IN_MILLIS
 
-      @input_cacher.mouse_pos = {x: mouse_x, y: mouse_y}
-      input_snapshot = @input_cacher.snapshot millis
+      mouse_pos = {x: mouse_x, y: mouse_y}
+      input_snapshot = @input_cacher.snapshot @last_snapshot, total_millis, mouse_pos
+      @last_snapshot = input_snapshot
+
       @input_mapping_system.update @entity_manager, delta, input_snapshot
 
       @monster_system.update @entity_manager, delta, input_snapshot
 
-      @timer_system.update @entity_manager, millis, input_snapshot
+      @timer_system.update @entity_manager, delta, input_snapshot
 
       @sound_system.update @entity_manager, delta, input_snapshot
 
       @particles_emitter_system.update @entity_manager, delta, input_snapshot
       @particles_system.update @entity_manager, delta, input_snapshot
       @background_system.update @entity_manager, delta, input_snapshot
-
     end
 
-    @last_millis = millis
+    @last_millis = total_millis
   end
 
   def draw

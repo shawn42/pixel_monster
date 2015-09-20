@@ -1,13 +1,30 @@
 require 'set'
 
-class InputCacher
-  attr_reader :down_ids, :total_time
-  attr_accessor :mouse_pos
+class InputSnapshot
+  attr_reader :mouse_pos, :total_time
 
-  def initialize(total_time = 0, down_ids = nil, mouse_pos = nil)
+  def initialize(previous_snapshot=nil, total_time=0, down_ids=Set.new, mouse_pos={})
     @total_time = total_time
-    @down_ids = down_ids || Set.new
-    @mouse_pos = mouse_pos
+    @mouse_pos = mouse_pos.freeze
+    @previous_snapshot = previous_snapshot
+    @down_ids = down_ids
+  end
+
+  def down?(id)
+    @down_ids && @down_ids.include?(id)
+  end
+
+  def pressed?(id)
+    @down_ids && @down_ids.include?(id) && !@previous_snapshot.down?(id)
+  end
+
+end
+
+class InputCacher
+  attr_reader :down_ids
+
+  def initialize
+    @down_ids = Set.new
   end
 
   def button_down(id)
@@ -18,12 +35,8 @@ class InputCacher
     @down_ids.delete id
   end
 
-  def down?(id)
-    @down_ids.include? id
-  end
-
-  def snapshot(total_time)
-    InputCacher.new(total_time, @down_ids.dup, @mouse_pos.dup).freeze
+  def snapshot(previous_snapshot, total_time, mouse_info)
+    InputSnapshot.new(previous_snapshot, total_time, @down_ids.dup, mouse_info).freeze
   end
 end
 
