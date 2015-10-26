@@ -110,5 +110,21 @@ class PixelMonster < Gosu::Window
 end
 
 if $0 == __FILE__
-  PixelMonster.new.show
+# require 'ruby-prof'
+#
+# # Profile the code
+# RubyProf.start
+# at_exit do
+#   result = RubyProf.stop
+#
+#   # Print a flat profile to text
+#   printer = RubyProf::FlatPrinter.new(result)
+#   printer.print(STDOUT)
+#
+# end
+# require 'stackprof'
+# StackProf.run(mode: :cpu, out: './stackprof-cpu-myapp.dump') do
+  $window = PixelMonster.new
+  $window.show
 end
+# end

@@ -202,6 +202,7 @@ class MonsterSystem
 
 
     # ColorStuffSystem
+    dead_ents = nil
     entity_manager.each_entity(ColorSource, Position, JoyColor) do |rec|
       src_id = rec.id
       src, pos, source_color = rec.components
@@ -215,9 +216,17 @@ class MonsterSystem
         blended_color = blend_colors(base: mc, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
         
-        entity_manager.remove_entity src_id
+        # TODO can I remove while iterating?!?!?
+        dead_ents ||= []
+        dead_ents << src_id
+        # entity_manager.remove_entity src_id
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+      end
+    end
+    if dead_ents
+      dead_ents.each do |dead_id|
+        entity_manager.remove_entity dead_id
       end
     end
   end
@@ -278,6 +287,10 @@ class MonsterSystem
 end
 class ParticlesSystem
   def update(entity_manager, dt, input)
+    monster_rec = entity_manager.find(Monster, Position).first
+    monster_pos = monster_rec.get(Position)
+
+    dead_ents = nil
     entity_manager.each_entity(Velocity, Particle, Position, JoyColor) do |rec|
       ent_id = rec.id
       vel, particle, pos, color = rec.components
@@ -286,8 +299,7 @@ class ParticlesSystem
       pos.x += vel.x * scalar
       pos.y += vel.y * scalar
 
-      monster_rec = entity_manager.find(Monster, Position).first
-      monster_pos = monster_rec.get(Position)
+      # m, monster_pos = *monster_rec.components
 
       dx = (monster_pos.x - pos.x) * scalar / 40
       dy = (monster_pos.y - pos.y) * scalar / 40
@@ -296,8 +308,15 @@ class ParticlesSystem
       
       c = color.color
       color.color = Gosu::Color.rgba(c.red,c.green,c.blue,c.alpha-20*scalar)
-      entity_manager.remove_entity ent_id if color.color.alpha <= 0
+      if color.color.alpha <= 0
+        dead_ents ||= []
+        dead_ents << ent_id 
+      end
     end
+
+    entity_manager.remove_entites dead_ents if dead_ents
+
+
   end
 end
 
@@ -327,7 +346,7 @@ end
 
 class InputMappingSystem
   def update(entity_manager, dt, input)
-    exit if input.down?(Gosu::KbEscape) || input.down?(Gosu::GpButton4)
+    $window.close if input.down?(Gosu::KbEscape) || input.down?(Gosu::GpButton4)
     # entity_manager.each_entity KeyboardControl, Controls do |rec|
     #   keys, control = rec.components
     #   ent_id = rec.id

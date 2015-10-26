@@ -13,9 +13,18 @@ class EntityManager
     yield build_record(id, components) unless components.any?(&:nil?) 
   end
 
-  def each_entity(*klasses)
+  def each_entity(*klasses, &blk)
     if block_given?
-      find(*klasses).each { |res| yield res }
+      # TODO move this to have a new cache bucket built when things are
+      # added/removed (to be swapped in next loop)
+      # ents = find(*klasses)
+      # i = 0
+      # ent_count = ents.length
+      # while i < ent_count
+      #   yield ents[i] if ents[i]
+      #   i += 1
+      # end
+      find(*klasses).each &blk
     else
       find(*klasses)
     end
@@ -23,7 +32,6 @@ class EntityManager
 
 
   def add_component(component:,id:)
-
     @comp_to_id[component.class] << id
     ent_record = @id_to_comp[id]
     klass = component.class
@@ -49,23 +57,51 @@ class EntityManager
     end
   end
 
-  def remove_entity(id)
-    ent_record = @id_to_comp.delete(id)
-    if ent_record
-      # NOTE could miss the dropping of entity if all components are individually removed
-      @num_entities -= 1
-      klasses = ent_record.keys
+  def remove_entites(ids)
+    @num_entities -= ids.size
+    ids.each do |id|
+      @id_to_comp.delete(id)
+    end
 
-      klasses.each do |klass|
-        @comp_to_id[klass].delete id
+    @comp_to_id.each do |klass, ents|
+      ents.delete_if{|ent_id| ids.include? ent_id}
+    end
+
+    @cache.each do |comp_klasses, results|
+      results.delete_if{|res| ids.include? res.id}
+    end
+  end
+
+  def remove_entity(id)
+    if @id_to_comp.delete(id)
+      @num_entities -= 1
+
+      @comp_to_id.each do |klass, ents|
+        ents.delete(id)
       end
 
       @cache.each do |comp_klasses, results|
-        unless (comp_klasses & klasses).empty?
-          results.delete_if{|res| res.id == id}
-        end
+        results.delete_if{|res| id == res.id}
       end
     end
+
+#     ent_record = @id_to_comp.delete(id)
+#
+#     if ent_record
+#       # NOTE could miss the dropping of entity if all components are individually removed
+#       @num_entities -= 1
+#       klasses = ent_record.keys
+#
+#       klasses.each do |klass|
+#         @comp_to_id[klass].delete id
+#       end
+#
+#       @cache.each do |comp_klasses, results|
+#         unless (comp_klasses & klasses).empty?
+#           results.delete_if{|res| res.id == id}
+#         end
+#       end
+#     end
   end
 
   def add_entity(*components)
@@ -81,6 +117,7 @@ class EntityManager
     cache_hit = @cache[klasses]
     return cache_hit if cache_hit
 
+    puts "cache miss: #{klasses.inspect}"
     id_collection = @comp_to_id.values_at *klasses
     intersecting_ids = id_collection.inject &:&
     result = intersecting_ids.map do |id|
