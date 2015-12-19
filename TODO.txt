@@ -1,15 +1,16 @@
-add color coded exit
-reset level (in case you screw up)
-next level workflow
-game over
-jump sound (couple)
-chiptune music
-camera that follows player
+additional music, can be dynamically generated?!!
+rainbow pixels (change color, encode in header bits)
+add reset pixels
+add magic pixel (sets you to target color)
 
 splash screen
+main menu? maybe not.
+
+test in win8!
+
 juice:
-  particles slurp into Monster
-  make Monster jelly like and squishy
+  particles on magic / reset / rainbow pixels
+  make Monster jelly like and squishy (on horizontal movement)
 
 builds
   windows
