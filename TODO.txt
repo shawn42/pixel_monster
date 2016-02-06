@@ -1,7 +1,19 @@
 additional music, can be dynamically generated?!!
 rainbow pixels (change color, encode in header bits)
-add reset pixels
 add magic pixel (sets you to target color)
+
+add reset pixels (black hole)
+  set to color - eg only steals green 
+
+add death pixel with glitch effect
+
+gamepad support for skip/reset
+make jump based on how long you press
+
+add border property to color / boxed?
+coop mode?
+
+make particle system an entity instead of each particle
 
 splash screen
 main menu? maybe not.

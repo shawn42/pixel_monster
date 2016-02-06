@@ -7,6 +7,13 @@ class Array
   def y=(y); self[1] = y end
   def z=(z); self[2] = z end
 end
+module Gosu
+  class Color
+    def info
+      [red,green,blue,alpha].inspect
+    end
+  end
+end
 
 module Enumerable
   def sum
@@ -22,13 +29,14 @@ class ParticlesEmitterSystem
       ent_id = rec.id
       evt, pos = rec.components
 
-      25.times do
+      evt.intensity.times do
         entity_manager.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
           Particle.new, JoyColor.new(evt.color), 
-          Velocity.new(SPEED.sample, SPEED.sample), Boxed.new(rand(3),rand(3))
+          Velocity.new(SPEED.sample, SPEED.sample), Boxed.new(rand(3),rand(3)), EntityTarget.new(evt.target)
       end
 
-      entity_manager.remove_component klass: EmitParticlesEvent, id: ent_id
+      # entity_manager.remove_component klass: EmitParticlesEvent, id: ent_id
+      entity_manager.remove_entity ent_id
     end
   end
 end
@@ -203,6 +211,7 @@ class MonsterSystem
 
     # ColorStuffSystem
     dead_ents = nil
+
     entity_manager.each_entity(ColorSource, Position, JoyColor) do |rec|
       src_id = rec.id
       src, pos, source_color = rec.components
@@ -220,10 +229,43 @@ class MonsterSystem
         dead_ents ||= []
         dead_ents << src_id
         # entity_manager.remove_entity src_id
-        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc)
+        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
       end
     end
+
+
+    # BlackHoleSystem
+    entity_manager.each_entity(BlackHole, Position, JoyColor, ColorSink) do |rec|
+      black_hole_id = rec.id
+      black_hole, pos, black_hole_color, subtract_color = rec.components
+
+      x_off = pos.x - monster_pos.x
+      y_off = pos.y - monster_pos.y
+      dist = x_off*x_off+y_off*y_off
+      if dist < MIN_DIST_SQUARED
+
+        if would_subtract?(base: monster_color.color, subtracted: subtract_color.color)
+
+          entity_manager.add_entity monster_pos, EmitParticlesEvent.new(color: subtract_color.color, target: black_hole_id, intensity: 100)
+          # black_hole_color.color = mc
+
+          monster_color.color = subtract_colors(base: monster_color.color, subtracted: subtract_color.color)
+          entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+        end
+      end
+      # entity_manager.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:Prefab::COLORS.sample , target: black_hole_id, intensity: 1)
+      if rand(3) == 0
+        entity_manager.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:subtract_color.color, target: black_hole_id, intensity: 1)
+      end
+
+      # black_hole_color.color = blend_colors(base: black_hole_color.color, absorbed: Gosu::Color::BLACK, weight: 0.05)
+      # cool hair do for player
+      # entity_manager.add_entity monster_pos, EmitParticlesEvent.new(color:Prefab::COLORS.sample , target: black_hole_id, intensity: 3)
+
+    end
+
+
     if dead_ents
       dead_ents.each do |dead_id|
         entity_manager.remove_entity dead_id
@@ -261,6 +303,23 @@ class MonsterSystem
 		1.0 + absorbtionRatio - Math.sqrt(absorbtionRatio * absorbtionRatio + (2.0 * absorbtionRatio))
   end
 
+  def subtract_colors(base: , subtracted:)
+    Gosu::Color.rgba(
+      base.red-subtracted.red,
+      base.green-subtracted.green,
+      base.blue-subtracted.blue,
+      base.alpha)
+  end
+
+  def would_subtract?(base: , subtracted:)
+
+    ret = (subtracted.red > 0 && base.red > 0) ||
+    (subtracted.green > 0 && base.green > 0) ||
+    (subtracted.blue > 0 && base.blue > 0)
+    puts "would subtract: #{subtracted.info} from #{base.info} " if ret
+    ret
+  end
+
   def blend_colors(base: , absorbed: , weight:)
     # return ColorMix.mix(base, absorbed)
 
@@ -287,22 +346,22 @@ class MonsterSystem
 end
 class ParticlesSystem
   def update(entity_manager, dt, input)
-    monster_rec = entity_manager.find(Monster, Position).first
-    monster_pos = monster_rec.get(Position)
-
     dead_ents = nil
-    entity_manager.each_entity(Velocity, Particle, Position, JoyColor) do |rec|
+    entity_manager.each_entity(Velocity, Particle, Position, JoyColor, EntityTarget) do |rec|
       ent_id = rec.id
-      vel, particle, pos, color = rec.components
+      vel, particle, pos, color, ent_target = rec.components
 
       scalar = dt/100.0
       pos.x += vel.x * scalar
       pos.y += vel.y * scalar
 
-      # m, monster_pos = *monster_rec.components
+      target = entity_manager.find_by_id(ent_target.id, Position)
+      require 'pry'
+      binding.pry if target.nil?
+      target_pos = target.get(Position)
 
-      dx = (monster_pos.x - pos.x) * scalar / 40
-      dy = (monster_pos.y - pos.y) * scalar / 40
+      dx = (target_pos.x - pos.x) * scalar / 40
+      dy = (target_pos.y - pos.y) * scalar / 40
       vel.x += dx
       vel.y += dy
       
@@ -315,7 +374,6 @@ class ParticlesSystem
     end
 
     entity_manager.remove_entites dead_ents if dead_ents
-
 
   end
 end
@@ -402,6 +460,8 @@ end
 class RenderSystem
 
   def draw(target, entity_manager)
+    monster_id = entity_manager.find(Monster)[0].id
+
     entity_manager.each_entity Position, JoyColor, Boxed do |rec|
       pos, color, boxed = rec.components
       ent_id = rec.id
@@ -418,23 +478,13 @@ class RenderSystem
       y3 = pos.y + boxed.height + y_off - squish
       x4 = x1
       y4 = y3
+      if monster_id == ent_id
+        c = Gosu::Color::WHITE
+        target.draw_quad(x1-1, y1-1, c, x2+1, y2-1, c, x3+1, y3+1, c, x4-1, y4+1, c, pos.z)
+      end
       target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, pos.z)
     end
 
-    # entity_manager.each_entity Position, JoyImage do |rec|
-    #   pos, image = rec.components
-    #   ent_id = rec.id
-    #   z = 1
-    #   image.image.draw_rot pos.x, pos.y, z, 0
-    # end
-
-    # entity_manager.each_entity Position, Score, JoyColor do |rec|
-    #   pos, s, c = rec.components
-    #   ent_id = rec.id
-    #   @font ||= Gosu::Font.new target, '', 32
-    #   z = 99
-    #   @font.draw s.points, pos.x, pos.y, z, 1, 1, c.color
-    # end
     # EEWWW
     rec = entity_manager.find(Monster, Position, JoyColor, Debug).first
     if rec

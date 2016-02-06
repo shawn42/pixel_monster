@@ -2,17 +2,26 @@ class Debug; end
 class BackgroundBlob; end
 class Monster; end
 class ColorSource; end
+class BlackHole; end
 class Particle; end
 class EmitParticlesEvent
-  attr_accessor :color
-  def initialize(color:)
+  attr_accessor :color, :target, :intensity
+  def initialize(color:, target:, intensity: 25)
     @color = color
+    @target = target
+    @intensity = intensity
   end
 end
 class Exit
   attr_accessor :open
   def initialize(open:false)
     @open = open
+  end
+end
+class EntityTarget
+  attr_accessor :id
+  def initialize(id)
+    @id = id
   end
 end
 
@@ -30,6 +39,11 @@ class Position
     @y = y
     @z = z
   end
+
+  def nearby(dx,dy)
+    Position.new @x + rand(dx*2) - dx,
+      @y + rand(dy*2) - dy, @z
+  end
 end
 
 class Velocity
@@ -45,6 +59,8 @@ class JoyColor
   def initialize(color)
     @color = color
   end
+end
+class ColorSink < JoyColor
 end
 
 class Boxed

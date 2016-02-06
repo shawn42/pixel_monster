@@ -10,7 +10,12 @@ class EntityManager
   def find_by_id(id, *klasses)
     ent_record = @id_to_comp[id]
     components = ent_record.values_at(*klasses)
-    yield build_record(id, components) unless components.any?(&:nil?) 
+    rec = build_record(id, components) unless components.any?(&:nil?) 
+    if block_given?
+      yield rec
+    else
+      rec
+    end
   end
 
   def each_entity(*klasses, &blk)
@@ -117,7 +122,6 @@ class EntityManager
     cache_hit = @cache[klasses]
     return cache_hit if cache_hit
 
-    puts "cache miss: #{klasses.inspect}"
     id_collection = @comp_to_id.values_at *klasses
     intersecting_ids = id_collection.inject &:&
     result = intersecting_ids.map do |id|

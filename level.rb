@@ -1,13 +1,24 @@
 require 'chunky_png'
+class BlackHoleTile
+  attr_accessor :marker_color, :subtract_color
+  def self.from_colors(colors)
+    self.new.tap do |t|
+      t.marker_color = colors[1]
+      t.subtract_color = colors[2] || Gosu::Color::WHITE
+    end
+  end
+end
 
 class Level
+  START_COLOR = Gosu::Color::WHITE
+  EXIT_COLOR = Gosu::Color::BLACK
   attr_accessor :map, :complete
   def self.load(filename)
     level = Level.new
     map = level.map
 
     png = ChunkyPNG::Image.from_file filename
-    map.exit_color = gosu_color_from_value png[0,0]
+    load_level_meta(level, png)
 
     colors = []
     png.width.times do |c|
@@ -15,15 +26,16 @@ class Level
         v = png[c,r+1]
         unless v == 0
           gosu_color = gosu_color_from_value v
-          if gosu_color == Gosu::Color::WHITE
+
+          special = map.special_tile_defs[gosu_color.abgr]
+          if gosu_color == START_COLOR
             map.player_x = c
             map.player_y = r+1
-          elsif gosu_color == Gosu::Color::BLACK
+          elsif gosu_color == EXIT_COLOR
             map.exit_x = c
             map.exit_y = r+1
-          # elsif gosu_color == Gosu::Color::BLUE
-          #   colors << Gosu::Color.rgba(0, 0xC2, 0x39, 255)
-          #   map.tiles[c][r+1] = gosu_color
+          elsif special
+            map.tiles[c][r+1] = special
           else
             colors << gosu_color
             map.tiles[c][r+1] = gosu_color
@@ -38,6 +50,37 @@ class Level
     map.average_color = Gosu::Color.rgba(avg_red, avg_green, avg_blue, 255)
 
     level
+  end
+
+  def self.load_level_meta(level, png)
+    map = level.map
+    map.exit_color = gosu_color_from_value png[0,0]
+    
+    command = nil
+    (1..png.width-1).each do |c|
+      a = ChunkyPNG::Color.a(png[c,0])
+      if command.nil? && a > 0
+        command = [gosu_color_from_value(png[c,0])]
+      elsif command && a == 0
+        process_command(level, command)
+        command = nil
+      elsif a > 0
+        command << gosu_color_from_value(png[c,0])
+      end
+    end
+  end
+  
+  def self.process_command(level, command)
+    map = level.map
+
+    case command[0]
+    when Gosu::Color::BLACK
+      tile = BlackHoleTile.from_colors command
+      map.special_tile_defs[tile.marker_color.abgr] = tile
+    else
+      puts "unknown command #{command}"
+    end
+
   end
 
   def self.gosu_color_from_value(v)
@@ -79,9 +122,11 @@ class Map
   TILE_SIZE = 32
   attr_accessor :tiles, 
     :exit_x, :exit_y, :exit_color,
-    :player_x, :player_y, :average_color
+    :player_x, :player_y, :average_color,
+    :black_hole_color, :special_tile_defs
   def initialize
     @tiles = Hash.new{|h,k|h[k] = {}}
+    @special_tile_defs = {}
   end
 
   def blocked?(world_x, world_y)
