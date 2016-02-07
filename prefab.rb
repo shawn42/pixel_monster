@@ -22,6 +22,8 @@ module Prefab
           when BlackHoleTile
             black_hole(entity_manager: entity_manager, subtract_color: tile_def.subtract_color,
                         x: c * tile_width+16, y: r*tile_width+16 )
+          when BouncyTile
+            bouncy_tile(entity_manager: entity_manager, x: c * tile_width+16, y: r*tile_width+16 )
           else
             raise "unkown special tile #{special}"
           end
@@ -50,6 +52,10 @@ module Prefab
 
   def self.black_hole(entity_manager:,subtract_color:,x:,y:)
       entity_manager.add_entity BlackHole.new, Position.new(x, y), Boxed.new(14,14), JoyColor.new(Gosu::Color.rgba(30,30,30,255)), ColorSink.new(subtract_color)
+  end
+
+  def self.bouncy_tile(entity_manager:,x:,y:)
+      entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(Gosu::Color::CYAN)
   end
 
   def self.tile(entity_manager:,x:,y:,color:)

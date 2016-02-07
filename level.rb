@@ -8,6 +8,14 @@ class BlackHoleTile
     end
   end
 end
+class BouncyTile
+  attr_accessor :marker_color
+  def self.from_colors(colors)
+    self.new.tap do |t|
+      t.marker_color = colors[1]
+    end
+  end
+end
 
 class Level
   START_COLOR = Gosu::Color::WHITE
@@ -77,6 +85,9 @@ class Level
     when Gosu::Color::BLACK
       tile = BlackHoleTile.from_colors command
       map.special_tile_defs[tile.marker_color.abgr] = tile
+    when Gosu::Color::BLUE
+      tile = BouncyTile.from_colors command
+      map.special_tile_defs[tile.marker_color.abgr] = tile
     else
       puts "unknown command #{command}"
     end
@@ -132,6 +143,7 @@ class Map
   def blocked?(world_x, world_y)
     @tiles[world_x / TILE_SIZE][world_y / TILE_SIZE]
   end
+  alias at blocked?
 
   def in_exit?(world_x, world_y)
     x = world_x / TILE_SIZE

@@ -2,6 +2,7 @@ class Debug; end
 class BackgroundBlob; end
 class Monster; end
 class ColorSource; end
+class Bouncy; end
 class BlackHole; end
 class Particle; end
 class EmitParticlesEvent
@@ -26,9 +27,10 @@ class EntityTarget
 end
 
 class PlatformPosition
-  attr_accessor :last_grounded_at
+  attr_accessor :last_grounded_at, :last_tile_bouncy
   def initialize
     @last_grounded_at = -1
+    @last_tile_bouncy = false
   end
 end
 

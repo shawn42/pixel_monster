@@ -102,7 +102,11 @@ class MonsterSystem
 
     speed = 70*dt/1000.0
     on_ground = on_ground?(map, monster_pos, boxed)
-    monster_platform.last_grounded_at = input.total_time if on_ground
+    if on_ground
+      monster_platform.last_grounded_at = input.total_time if on_ground
+      should_boost = should_boost?(map, monster_pos, boxed)
+      monster_platform.last_tile_bouncy = should_boost
+    end
 
     old_y_vel = vel.y
 
@@ -122,23 +126,27 @@ class MonsterSystem
     can_jump &= vel.y <= 2.5
     if (input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)) && can_jump
       jumping = true
+      jump_strength = monster_platform.last_tile_bouncy ? 25 : 15 
+      vel.y -= jump_strength
+
+      monster_platform.last_tile_bouncy = false
       monster_platform.last_grounded_at = -1
       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
-      vel.y -= 30
     else
       vel.y += 0.75
     end
 
-    if vel.x > MAX_VEL
-      vel.x = MAX_VEL 
-    elsif vel.x < -MAX_VEL
-      vel.x = -MAX_VEL
-    end
-    if vel.y > MAX_VEL
-      vel.y = MAX_VEL 
-    elsif vel.y < -MAX_VEL
-      vel.y = -MAX_VEL
-    end
+    # if vel.x > MAX_VEL
+    #   vel.x = MAX_VEL 
+    # elsif vel.x < -MAX_VEL
+    #   vel.x = -MAX_VEL
+    # end
+    # if vel.y > MAX_VEL
+    #   vel.y = MAX_VEL 
+    # elsif vel.y < -MAX_VEL
+    #   puts "-MAX: #{vel.y}"
+    #   vel.y = -MAX_VEL
+    # end
 
     x_step = vel.x < 0 ? -1 : 1
     w = boxed.width
@@ -299,6 +307,16 @@ class MonsterSystem
     map.blocked?(pos.x-w, pos.y+h+1) || map.blocked?(pos.x+w, pos.y+h+1)
   end
 
+  def should_boost?(map, pos, box)
+    x = pos.x
+    y = pos.y
+    w = box.width
+    h = box.height
+    left_tile = map.at(pos.x-w, pos.y+h+1)
+    right_tile = map.at(pos.x+w, pos.y+h+1)
+    (left_tile && left_tile.is_a?(BouncyTile)) || (right_tile && right_tile.is_a?(BouncyTile))
+  end
+
   def reflectance(absorbtionRatio)
 		1.0 + absorbtionRatio - Math.sqrt(absorbtionRatio * absorbtionRatio + (2.0 * absorbtionRatio))
   end
@@ -312,12 +330,9 @@ class MonsterSystem
   end
 
   def would_subtract?(base: , subtracted:)
-
-    ret = (subtracted.red > 0 && base.red > 0) ||
+    (subtracted.red > 0 && base.red > 0) ||
     (subtracted.green > 0 && base.green > 0) ||
     (subtracted.blue > 0 && base.blue > 0)
-    puts "would subtract: #{subtracted.info} from #{base.info} " if ret
-    ret
   end
 
   def blend_colors(base: , absorbed: , weight:)
