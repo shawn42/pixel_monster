@@ -136,17 +136,17 @@ class MonsterSystem
       vel.y += 0.75
     end
 
-    # if vel.x > MAX_VEL
-    #   vel.x = MAX_VEL 
-    # elsif vel.x < -MAX_VEL
-    #   vel.x = -MAX_VEL
-    # end
-    # if vel.y > MAX_VEL
-    #   vel.y = MAX_VEL 
+    if vel.x > MAX_VEL
+      vel.x = MAX_VEL 
+    elsif vel.x < -MAX_VEL
+      vel.x = -MAX_VEL
+    end
+    if vel.y > MAX_VEL
+      vel.y = MAX_VEL 
     # elsif vel.y < -MAX_VEL
     #   puts "-MAX: #{vel.y}"
     #   vel.y = -MAX_VEL
-    # end
+    end
 
     x_step = vel.x < 0 ? -1 : 1
     w = boxed.width
