@@ -475,6 +475,7 @@ end
 class RenderSystem
 
   def draw(target, entity_manager)
+    # target.scale(0.5, 0.5) do
     monster_id = entity_manager.find(Monster)[0].id
 
     entity_manager.each_entity Position, JoyColor, Boxed do |rec|
@@ -522,6 +523,7 @@ class RenderSystem
       target.draw_quad(x+40, y, b, x+40, y-h, b, x+60, y-h, b, x+60, y, b, 3)
     end
 
+    # end
 
   end
 end
