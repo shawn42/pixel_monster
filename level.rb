@@ -38,15 +38,15 @@ class Level
           special = map.special_tile_defs[gosu_color.abgr]
           if gosu_color == START_COLOR
             map.player_x = c
-            map.player_y = r+1
+            map.player_y = r
           elsif gosu_color == EXIT_COLOR
             map.exit_x = c
-            map.exit_y = r+1
+            map.exit_y = r
           elsif special
-            map.tiles[c][r+1] = special
+            map.tiles[c][r] = special
           else
             colors << gosu_color
-            map.tiles[c][r+1] = gosu_color
+            map.tiles[c][r] = gosu_color
           end
         end
       end
