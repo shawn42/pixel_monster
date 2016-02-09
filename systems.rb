@@ -63,7 +63,6 @@ class MonsterSystem
     monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     ent_id = monster_rec.id
     monster, monster_platform, monster_pos, monster_color, boxed, vel = monster_rec.components
-    mc = monster_color.color
 
     if input.pressed?(Gosu::KbTab) || input.pressed?(Gosu::GpButton5)
       level.complete!
@@ -73,7 +72,7 @@ class MonsterSystem
       level.failed!
     end
 
-    has_exit_color = has_exit_color?(map, mc)
+    has_exit_color = has_exit_color?(map, monster_color.color)
     exit_recs = entity_manager.find(Exit, Position, JoyColor, Boxed)
     exit_recs.each do |exit_rec|
       ex, exit_pos, exit_color, exit_boxed = exit_rec.components
@@ -101,7 +100,6 @@ class MonsterSystem
       end
     end
 
-    speed = 70*dt/1000.0
     on_ground = on_ground?(map, monster_pos, boxed)
     if on_ground
       monster_platform.last_grounded_at = input.total_time if on_ground
@@ -112,7 +110,7 @@ class MonsterSystem
     old_y_vel = vel.y
 
     vel.y = 0 if on_ground
-    lateral_speed = 1.0
+    lateral_speed = dt/17.0
     lateral_speed /= 0.5 unless on_ground
 
     if input.down?(Gosu::KbLeft) || input.down?(Gosu::GpLeft)
@@ -121,25 +119,48 @@ class MonsterSystem
       vel.x += lateral_speed
     end
 
+    # can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
+    # can_jump &= vel.y <= 2.5 # why was this here??
+#     jumping = false
+#     jump_strength = monster_platform.last_tile_bouncy ? 25 : 15 
+#     if (input.pressed?(Gosu::KbUp) || input.pressed?(Gosu::GpButton1)) && can_jump
+#       jumping = true
+#       vel.y -= jump_strength
+#
+#       monster_platform.last_tile_bouncy = false
+#       monster_platform.last_grounded_at = -1
+#       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
+#     # elsif (input.released?(Gosu::KbUp) || input.released?(Gosu::GpButton1))
+#     #   vel.y = jump_strength / 2 if vel.y < -jump_strength/2.0
+#     elsif input.total_time - monster_platform.last_grounded_at > RUN_FORGIVENESS
+#       vel.y += 0.75
+#     end
 
-    jumping = false
-    can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
-    can_jump &= vel.y <= 2.5
-    # (0..15).each do |i|
-    #   puts "Gp#{i}" if input.down?(Gosu::const_get("GpButton#{i}"))
-    # end
+    jump_constant = 21/1000.0
+    gravity_constant = 40/1000.0
+    max_jump_time = 550
+    max_jump_time = 840 if monster_platform.last_tile_bouncy
 
-    if (input.pressed?(Gosu::KbUp) || input.pressed?(Gosu::GpButton1)) && can_jump
-      jumping = true
-      jump_strength = monster_platform.last_tile_bouncy ? 25 : 15 
-      vel.y -= jump_strength
+    jump = input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)
+    can_jump = on_ground || 
+      ((input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS &&
+       vel.x.abs >= MAX_VEL)
 
+    if can_jump && jump
       monster_platform.last_tile_bouncy = false
-      monster_platform.last_grounded_at = -1
-      entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
-    elsif input.total_time - monster_platform.last_grounded_at > RUN_FORGIVENESS
-      vel.y += 0.75
+      monster_platform.jump_time = max_jump_time 
+      vel.y = -monster_platform.jump_time * jump_constant
+      jumping = true
+    elsif !can_jump && jump && monster_platform.jump_time > 0
+      monster_platform.jump_time -= dt
+      vel.y = -monster_platform.jump_time * jump_constant
+    elsif !can_jump && (!jump || monster_platform.jump_time <= 0)
+      monster_platform.jump_time = 0
     end
+    vel.y += gravity_constant * dt if !can_jump
+
+
+
 
     if vel.x > MAX_VEL
       vel.x = MAX_VEL 
@@ -178,6 +199,7 @@ class MonsterSystem
         map.blocked?(monster_pos.x-w, new_y+h) ||
         map.blocked?(monster_pos.x+w, new_y+h)
         vel.y = 0
+        monster_platform.jump_time = 0
         y_hit = vel.y
         break
       else
@@ -225,23 +247,24 @@ class MonsterSystem
     # ColorStuffSystem
     dead_ents = nil
 
-    entity_manager.each_entity(ColorSource, Position, JoyColor) do |rec|
+    entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed) do |rec|
       src_id = rec.id
-      src, pos, source_color = rec.components
+      src, pos, source_color, box = rec.components
       sc = source_color.color
 
       x_off = pos.x - monster_pos.x
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
 
-      if dist < MIN_DIST_SQUARED
-        blended_color = blend_colors(base: mc, absorbed: sc, weight: 0.15)
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+        blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
         
         # TODO can I remove while iterating?!?!?
         dead_ents ||= []
         dead_ents << src_id
         # entity_manager.remove_entity src_id
+        # TODO can I add while iterating safely?
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
       end
@@ -249,20 +272,18 @@ class MonsterSystem
 
 
     # BlackHoleSystem
-    entity_manager.each_entity(BlackHole, Position, JoyColor, ColorSink) do |rec|
+    entity_manager.each_entity(BlackHole, Position, JoyColor, ColorSink, Boxed) do |rec|
       black_hole_id = rec.id
-      black_hole, pos, black_hole_color, subtract_color = rec.components
+      black_hole, pos, black_hole_color, subtract_color, box = rec.components
 
       x_off = pos.x - monster_pos.x
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
-      if dist < MIN_DIST_SQUARED
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
 
         if would_subtract?(base: monster_color.color, subtracted: subtract_color.color)
 
           entity_manager.add_entity monster_pos, EmitParticlesEvent.new(color: subtract_color.color, target: black_hole_id, intensity: 100)
-          # black_hole_color.color = mc
-
           monster_color.color = subtract_colors(base: monster_color.color, subtracted: subtract_color.color)
           entity_manager.add_entity SoundEffectEvent.new(COLLECT)
         end
@@ -286,7 +307,7 @@ class MonsterSystem
       x_off = pos.x - monster_pos.x
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
-      level.failed! if dist < MIN_DIST_SQUARED && boxes_touch?(pos, death_box, monster_pos, boxed)
+      level.failed! if dist < MIN_DIST_SQUARED && boxes_touch?(pos, death_box, monster_pos, boxed, 2)
     end
 
     if dead_ents
@@ -296,9 +317,9 @@ class MonsterSystem
     end
   end
 
-  def boxes_touch?(a_pos, a_box, b_pos, b_box)
-    ((a_pos.x - b_pos.x).abs * 2 <= (a_box.width*2 + b_box.width*2+2)) &&
-           ((a_pos.y - b_pos.y).abs * 2 <= (a_box.height*2 + b_box.height*2+2))
+  def boxes_touch?(a_pos, a_box, b_pos, b_box, fudge=10)
+    ((a_pos.x - b_pos.x).abs * 2 <= (a_box.width*2 + b_box.width*2+fudge)) &&
+           ((a_pos.y - b_pos.y).abs * 2 <= (a_box.height*2 + b_box.height*2+fudge))
   end
 
   def has_exit_color?(map, color)
@@ -356,6 +377,8 @@ class MonsterSystem
   end
 
   def blend_colors(base: , absorbed: , weight:)
+    @n ||= 0
+    @n += 1
     # return ColorMix.mix(base, absorbed)
 
     # ORGINAL:

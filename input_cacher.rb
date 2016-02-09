@@ -13,9 +13,17 @@ class InputSnapshot
   def down?(id)
     @down_ids && @down_ids.include?(id)
   end
+  
+  def up?(id)
+    !@down_ids || !@down_ids.include?(id)
+  end
 
   def pressed?(id)
     @down_ids && @down_ids.include?(id) && !@previous_snapshot.down?(id)
+  end
+
+  def released?(id)
+    @down_ids && !@down_ids.include?(id) && @previous_snapshot && @previous_snapshot.down?(id)
   end
 
 end

@@ -28,10 +28,13 @@ class EntityTarget
 end
 
 class PlatformPosition
-  attr_accessor :last_grounded_at, :last_tile_bouncy
+  attr_accessor :last_grounded_at, :last_tile_bouncy,
+    :jump_time
+
   def initialize
     @last_grounded_at = -1
     @last_tile_bouncy = false
+    @jump_time = 0
   end
 end
 

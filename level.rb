@@ -145,7 +145,7 @@ class Map
   attr_accessor :tiles, 
     :exit_x, :exit_y, :exit_color,
     :player_x, :player_y, :average_color,
-    :black_hole_color, :special_tile_defs
+    :special_tile_defs
   def initialize
     @tiles = Hash.new{|h,k|h[k] = {}}
     @special_tile_defs = {}
