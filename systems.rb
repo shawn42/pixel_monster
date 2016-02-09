@@ -278,22 +278,25 @@ class MonsterSystem
     end
 
     # DeathSystem
-    entity_manager.each_entity(Death, Position) do |rec|
+    entity_manager.each_entity(Death, Position, Boxed) do |rec|
       death_id = rec.id
-      death, pos = rec.components
+      death, pos, death_box = rec.components
 
       x_off = pos.x - monster_pos.x
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
-      level.failed!  if dist < MIN_DIST_SQUARED
+      level.failed! if dist < MIN_DIST_SQUARED && boxes_overlap?(pos, death_box, monster_pos, boxed)
     end
-
 
     if dead_ents
       dead_ents.each do |dead_id|
         entity_manager.remove_entity dead_id
       end
     end
+  end
+
+  def boxes_overlap?(a_pos, a_box, b_pos, b_box)
+    true # close enough for now
   end
 
   def has_exit_color?(map, color)
