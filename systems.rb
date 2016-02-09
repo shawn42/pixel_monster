@@ -64,11 +64,11 @@ class MonsterSystem
     monster, monster_platform, monster_pos, monster_color, boxed, vel = monster_rec.components
     mc = monster_color.color
 
-    if input.pressed?(Gosu::KbTab)
+    if input.pressed?(Gosu::KbTab) || input.pressed?(Gosu::GpButton5)
       level.complete!
     end
 
-    if input.down?(Gosu::KbR) || monster_pos.y > 1100
+    if input.down?(Gosu::KbR) || input.pressed?(Gosu::GpButton4) || monster_pos.y > 1100
       level.failed!
     end
 
@@ -124,7 +124,11 @@ class MonsterSystem
     jumping = false
     can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
     can_jump &= vel.y <= 2.5
-    if (input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)) && can_jump
+    # (0..15).each do |i|
+    #   puts "Gp#{i}" if input.down?(Gosu::const_get("GpButton#{i}"))
+    # end
+
+    if (input.pressed?(Gosu::KbUp) || input.pressed?(Gosu::GpButton1)) && can_jump
       jumping = true
       jump_strength = monster_platform.last_tile_bouncy ? 25 : 15 
       vel.y -= jump_strength
@@ -273,6 +277,17 @@ class MonsterSystem
 
     end
 
+    # DeathSystem
+    entity_manager.each_entity(Death, Position) do |rec|
+      death_id = rec.id
+      death, pos = rec.components
+
+      x_off = pos.x - monster_pos.x
+      y_off = pos.y - monster_pos.y
+      dist = x_off*x_off+y_off*y_off
+      level.failed!  if dist < MIN_DIST_SQUARED
+    end
+
 
     if dead_ents
       dead_ents.each do |dead_id|
@@ -419,7 +434,7 @@ end
 
 class InputMappingSystem
   def update(entity_manager, dt, input)
-    $window.close if input.down?(Gosu::KbEscape) || input.down?(Gosu::GpButton4)
+    $window.close if input.down?(Gosu::KbEscape) || input.down?(Gosu::GpButton8)
     # entity_manager.each_entity KeyboardControl, Controls do |rec|
     #   keys, control = rec.components
     #   ent_id = rec.id

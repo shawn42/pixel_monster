@@ -24,6 +24,8 @@ module Prefab
                         x: c * tile_width+16, y: r*tile_width+16 )
           when BouncyTile
             bouncy_tile(entity_manager: entity_manager, x: c * tile_width+16, y: r*tile_width+16 )
+          when DeathTile
+            death_tile(entity_manager: entity_manager, x: c * tile_width+16, y: r*tile_width+16 )
           else
             raise "unkown special tile #{special}"
           end
@@ -56,6 +58,9 @@ module Prefab
 
   def self.bouncy_tile(entity_manager:,x:,y:)
       entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(Gosu::Color::CYAN)
+  end
+  def self.death_tile(entity_manager:,x:,y:)
+      entity_manager.add_entity Death.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(Gosu::Color::RED)
   end
 
   def self.tile(entity_manager:,x:,y:,color:)

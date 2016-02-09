@@ -4,6 +4,7 @@ class Monster; end
 class ColorSource; end
 class Bouncy; end
 class BlackHole; end
+class Death; end
 class Particle; end
 class EmitParticlesEvent
   attr_accessor :color, :target, :intensity

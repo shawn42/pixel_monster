@@ -16,6 +16,14 @@ class BouncyTile
     end
   end
 end
+class DeathTile
+  attr_accessor :marker_color
+  def self.from_colors(colors)
+    self.new.tap do |t|
+      t.marker_color = colors[1]
+    end
+  end
+end
 
 class Level
   START_COLOR = Gosu::Color::WHITE
@@ -87,6 +95,9 @@ class Level
       map.special_tile_defs[tile.marker_color.abgr] = tile
     when Gosu::Color::BLUE
       tile = BouncyTile.from_colors command
+      map.special_tile_defs[tile.marker_color.abgr] = tile
+    when Gosu::Color::RED
+      tile = DeathTile.from_colors command
       map.special_tile_defs[tile.marker_color.abgr] = tile
     else
       puts "unknown command #{command}"
