@@ -43,6 +43,7 @@ end
 
 class MonsterSystem
   JUMP_FORGIVENESS = 100 #ms
+  RUN_FORGIVENESS = 20 #ms
   SQUISH_MAX = 8 #px
   SQUISH_DURATION = 150 #ms
   PEAK_DURATION = SQUISH_DURATION / 4.0 #ms
@@ -136,7 +137,7 @@ class MonsterSystem
       monster_platform.last_tile_bouncy = false
       monster_platform.last_grounded_at = -1
       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
-    else
+    elsif input.total_time - monster_platform.last_grounded_at > RUN_FORGIVENESS
       vel.y += 0.75
     end
 
