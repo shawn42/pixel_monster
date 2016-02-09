@@ -63,8 +63,7 @@ class JoyColor
     @color = color
   end
 end
-class ColorSink < JoyColor
-end
+class ColorSink < JoyColor; end
 
 class Boxed
   attr_accessor :width, :height, :squished_at, :squish_height, :squish_amount, :squish_dir

@@ -285,7 +285,7 @@ class MonsterSystem
       x_off = pos.x - monster_pos.x
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
-      level.failed! if dist < MIN_DIST_SQUARED && boxes_overlap?(pos, death_box, monster_pos, boxed)
+      level.failed! if dist < MIN_DIST_SQUARED && boxes_touch?(pos, death_box, monster_pos, boxed)
     end
 
     if dead_ents
@@ -295,8 +295,9 @@ class MonsterSystem
     end
   end
 
-  def boxes_overlap?(a_pos, a_box, b_pos, b_box)
-    true # close enough for now
+  def boxes_touch?(a_pos, a_box, b_pos, b_box)
+    ((a_pos.x - b_pos.x).abs * 2 <= (a_box.width*2 + b_box.width*2+2)) &&
+           ((a_pos.y - b_pos.y).abs * 2 <= (a_box.height*2 + b_box.height*2+2))
   end
 
   def has_exit_color?(map, color)
