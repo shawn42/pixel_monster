@@ -47,6 +47,8 @@ class MonsterSystem
   SQUISH_MAX = 8 #px
   SQUISH_DURATION = 150 #ms
   PEAK_DURATION = SQUISH_DURATION / 4.0 #ms
+  JUMP_HEIGHT = 15
+  SUPER_JUMP_HEIGHT = 25
 
   MAX_VEL = 15
   MIN_DIST = 44
@@ -119,62 +121,22 @@ class MonsterSystem
       vel.x += lateral_speed
     end
 
-    # FIXED HEIGHT JUMP
-    # can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
-    # can_jump &= vel.y <= 2.5 # why was this here??
-#     jumping = false
-#     jump_strength = monster_platform.last_tile_bouncy ? 25 : 15 
-#     if (input.pressed?(Gosu::KbUp) || input.pressed?(Gosu::GpButton1)) && can_jump
-#       jumping = true
-#       vel.y -= jump_strength
-#
-#       monster_platform.last_tile_bouncy = false
-#       monster_platform.last_grounded_at = -1
-#       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
-#     # elsif (input.released?(Gosu::KbUp) || input.released?(Gosu::GpButton1))
-#     #   vel.y = jump_strength / 2 if vel.y < -jump_strength/2.0
-#     elsif input.total_time - monster_platform.last_grounded_at > RUN_FORGIVENESS
-#       vel.y += 0.75
-#     end
-
-# JETPACK JUMP
-#     jump_constant = 21/1000.0
-#     gravity_constant = 40/1000.0
-#     max_jump_time = 550
-#     max_jump_time = 840 if monster_platform.last_tile_bouncy
-#
-#     jump = input.down?(Gosu::KbUp) || input.down?(Gosu::GpButton1)
-#     can_jump = on_ground || 
-#       ((input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS &&
-#        vel.x.abs >= MAX_VEL)
-#
-#     if can_jump && jump
-#       monster_platform.last_tile_bouncy = false
-#       monster_platform.jump_time = max_jump_time 
-#       vel.y = -monster_platform.jump_time * jump_constant
-#       jumping = true
-#     elsif !can_jump && jump && monster_platform.jump_time > 0
-#       monster_platform.jump_time -= dt
-#       vel.y = -monster_platform.jump_time * jump_constant
-#     elsif !can_jump && (!jump || monster_platform.jump_time <= 0)
-#       monster_platform.jump_time = 0
-#     end
-#     vel.y += gravity_constant * dt if !can_jump
-
-
-    # TWO STAGE JUMP
     can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
     jumping = false
-    jump_strength = monster_platform.last_tile_bouncy ? 25 : 15 
-    monster_platform.last_jump = jump_strength
+    jump_strength = monster_platform.last_tile_bouncy ? SUPER_JUMP_HEIGHT : JUMP_HEIGHT 
     if (input.pressed?(Gosu::KbUp) || input.pressed?(Gosu::GpButton1)) && can_jump
+      monster_platform.last_jump = jump_strength
       jumping = true
       vel.y -= jump_strength
       monster_platform.last_grounded_at = -1
       monster_platform.last_tile_bouncy = false
       entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
     elsif (input.released?(Gosu::KbUp) || input.released?(Gosu::GpButton1))
-      vel.y = -monster_platform.last_jump / 2.0 if vel.y < -monster_platform.last_jump/2.0
+      if (monster_platform.last_jump == SUPER_JUMP_HEIGHT)
+        vel.y = -monster_platform.last_jump * 0.6 if vel.y < -monster_platform.last_jump * 0.6
+      else
+        vel.y = -monster_platform.last_jump * 0.5 if vel.y < -monster_platform.last_jump * 0.5
+      end
     elsif input.total_time - monster_platform.last_grounded_at > RUN_FORGIVENESS
       vel.y += 0.75
     end
@@ -188,7 +150,6 @@ class MonsterSystem
     if vel.y > MAX_VEL
       vel.y = MAX_VEL 
     # elsif vel.y < -MAX_VEL
-    #   puts "-MAX: #{vel.y}"
     #   vel.y = -MAX_VEL
     end
 
