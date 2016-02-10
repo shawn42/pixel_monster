@@ -29,12 +29,13 @@ end
 
 class PlatformPosition
   attr_accessor :last_grounded_at, :last_tile_bouncy,
-    :jump_time
+    :jump_time, :last_jump
 
   def initialize
     @last_grounded_at = -1
     @last_tile_bouncy = false
     @jump_time = 0
+    @last_jump = 0
   end
 end
 
