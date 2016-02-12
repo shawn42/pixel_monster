@@ -15,10 +15,10 @@ class PixelMonster < Gosu::Window
   def initialize
     super(1024,1024,false)
 
-    @entity_manager = EntityManager.new 
+    @entity_manager = EntityManager.new
     @input_cacher = InputCacher.new
     @level_number = (ARGV[0] || 1).to_i - 1
-    @num_levels = 12
+    @num_levels = Dir['./level*.png'].size
     @music = Gosu::Song.new 'music.wav'
     next_level
     build_systems
@@ -42,7 +42,7 @@ class PixelMonster < Gosu::Window
 
   def reset_level
     @level.reset! if @level
-    @entity_manager = EntityManager.new 
+    @entity_manager = EntityManager.new
     Prefab.level entity_manager: @entity_manager, level: @level
   end
 
