@@ -8,12 +8,13 @@ class Death; end
 class Particle; end
 class EmitParticlesEvent
   attr_accessor :color, :target, :intensity
-  def initialize(color:, target:, intensity: 25)
+  def initialize(color:, target:nil, intensity: 25)
     @color = color
     @target = target
     @intensity = intensity
   end
 end
+
 class Exit
   attr_accessor :open
   def initialize(open:false)

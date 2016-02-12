@@ -10,10 +10,10 @@ module Prefab
     tile_width = 32
     map.tiles.each do |c,ys|
       ys.each do |r,color|
-        tile(entity_manager: entity_manager, 
-                    x: c * tile_width+16, y: r*tile_width+16, color: Color::GRAY)
-
         if color.is_a? Gosu::Color
+          tile(entity_manager: entity_manager, 
+                      x: c * tile_width+16, y: r*tile_width+16, color: Color::GRAY)
+
           color_source(entity_manager: entity_manager, 
                       x: c * tile_width+16, y: r*tile_width+16, color: color )
         else
@@ -23,6 +23,8 @@ module Prefab
             black_hole(entity_manager: entity_manager, subtract_color: tile_def.subtract_color,
                         x: c * tile_width+16, y: r*tile_width+16 )
           when BouncyTile
+            tile(entity_manager: entity_manager, 
+                        x: c * tile_width+16, y: r*tile_width+16, color: Color::GRAY)
             bouncy_tile(entity_manager: entity_manager, x: c * tile_width+16, y: r*tile_width+16 )
           when DeathTile
             death_tile(entity_manager: entity_manager, x: c * tile_width+16, y: r*tile_width+16 )
@@ -57,10 +59,10 @@ module Prefab
   end
 
   def self.bouncy_tile(entity_manager:,x:,y:)
-      entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(Gosu::Color::CYAN)
+      entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16)
   end
   def self.death_tile(entity_manager:,x:,y:)
-      entity_manager.add_entity Death.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(Gosu::Color::RED)
+    entity_manager.add_entity Death.new, Position.new(x, y), Boxed.new(16,16)
   end
 
   def self.tile(entity_manager:,x:,y:,color:)

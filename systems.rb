@@ -249,19 +249,24 @@ class MonsterSystem
       end
     end
 
+    # BouncySystem
+    entity_manager.each_entity(Position, Boxed, Bouncy) do |rec|
+      bouncy_id = rec.id
+      pos, bouncy_box, bouncy = rec.components
+
+      if (rand(10) < 2)
+        entity_manager.add_entity pos, EmitParticlesEvent.new(color: Gosu::Color::WHITE, intensity: 15)
+      end
+    end
+
 
     # BlackHoleSystem
     entity_manager.each_entity(BlackHole, Position, JoyColor, ColorSink, Boxed) do |rec|
       black_hole_id = rec.id
       black_hole, pos, black_hole_color, subtract_color, box = rec.components
 
-      x_off = pos.x - monster_pos.x
-      y_off = pos.y - monster_pos.y
-      dist = x_off*x_off+y_off*y_off
-      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
-
+      if boxes_touch?(pos, box, monster_pos, boxed)
         if would_subtract?(base: monster_color.color, subtracted: subtract_color.color)
-
           entity_manager.add_entity monster_pos, EmitParticlesEvent.new(color: subtract_color.color, target: black_hole_id, intensity: 100)
           monster_color.color = subtract_colors(base: monster_color.color, subtracted: subtract_color.color)
           entity_manager.add_entity SoundEffectEvent.new(COLLECT)
@@ -283,10 +288,7 @@ class MonsterSystem
       death_id = rec.id
       death, pos, death_box = rec.components
 
-      x_off = pos.x - monster_pos.x
-      y_off = pos.y - monster_pos.y
-      dist = x_off*x_off+y_off*y_off
-      level.failed! if dist < MIN_DIST_SQUARED && boxes_touch?(pos, death_box, monster_pos, boxed, 2)
+      level.failed! if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
     end
 
     if dead_ents
@@ -393,9 +395,12 @@ class ParticlesSystem
       pos.y += vel.y * scalar
 
       target = entity_manager.find_by_id(ent_target.id, Position)
-      require 'pry'
-      binding.pry if target.nil?
-      target_pos = target.get(Position)
+      target_pos = 
+        if target
+          target.get(Position)
+        else
+          Position.new(pos.x, pos.y-70)
+        end
 
       dx = (target_pos.x - pos.x) * scalar / 40
       dy = (target_pos.y - pos.y) * scalar / 40
@@ -543,6 +548,28 @@ class RenderSystem
 
       h = (c.blue / 255.0 * full_h).round
       target.draw_quad(x+40, y, b, x+40, y-h, b, x+60, y-h, b, x+60, y, b, 3)
+    end
+
+    entity_manager.each_entity(Position, Boxed, Death) do |rec|
+      death_id = rec.id
+      pos, death_box, death = rec.components
+
+      x = pos.x
+      y = pos.y
+      w = death_box.width
+      h = death_box.height
+      n = 150
+
+      n.times do 
+        rx = rand(x-w-4..x+w)
+        ry = rand(y-h-4..y+h)
+        rw = rand(2..4)
+        rh = rand(2..4)
+        rc = Gosu::Color.rgba(rand(255),rand(255),rand(255),rand(255))
+        z = 4
+
+        target.draw_quad(rx, ry, rc, rx+rw, ry, rc, rx+rw, ry+rh, rc, rx, ry+rh, rc, z)
+      end
     end
 
     # end
