@@ -44,7 +44,12 @@ class PixelMonster < Gosu::Window
     @level_number = 1 if @level_number > @num_levels
 
     filename = "level#{@level_number}.png"
-    @level = Level.load(filename)
+    begin
+      puts filename
+      @level = Level.load(filename)
+    rescue => e
+      next_level
+    end
     reset_level
   end
 
