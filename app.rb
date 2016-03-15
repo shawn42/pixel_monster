@@ -19,7 +19,10 @@ class PixelMonster < Gosu::Window
     @input_cacher = InputCacher.new
     @level_number = (ARGV[0] || 1).to_i - 1
     @num_levels = Dir['./level*.png'].size
-    @music = Gosu::Song.new 'music.wav'
+    @music = [
+      Gosu::Song.new('rubopo.ogg'),
+      Gosu::Song.new('rubopo-d.ogg')
+    ]
     next_level
     build_systems
   end
@@ -28,10 +31,15 @@ class PixelMonster < Gosu::Window
     false
   end
 
+  def choose_track
+    @music[@level_number % @music.size]
+  end
+
   def next_level
-    @music.stop
-    @music.play true
     @level_number = @level_number += 1
+    music = choose_track
+    music.stop
+    music.play true
 
     @level_number = 1 if @level_number > @num_levels
 
