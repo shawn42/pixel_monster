@@ -19,10 +19,7 @@ class PixelMonster < Gosu::Window
     @input_cacher = InputCacher.new
     @level_number = (ARGV[0] || 1).to_i - 1
     @num_levels = Dir['./level*.png'].size
-    @music = [
-      Gosu::Song.new('rubopo.ogg'),
-      Gosu::Song.new('rubopo-d.ogg')
-    ]
+    @music = Dir['./*.ogg'].map { |ogg| Gosu::Song.new ogg }
     next_level
     build_systems
   end
@@ -45,7 +42,6 @@ class PixelMonster < Gosu::Window
 
     filename = "level#{@level_number}.png"
     begin
-      puts filename
       @level = Level.load(filename)
     rescue => e
       next_level
