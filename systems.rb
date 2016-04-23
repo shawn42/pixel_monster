@@ -314,38 +314,39 @@ class MonsterSystem
 
     # MovableTilesSystem
     moving_tiles.each do |rec|
-      movement, tile_pos, tile_box = rec.components
+      moveable_tile, tile_pos, tile_box = rec.components
       # set new target if needed
       # FAKE IT
-      movement.world_target ||= vec(tile_pos.x+128,tile_pos.y)
+      # moveable_tile.world_target ||= vec(tile_pos.x+128,tile_pos.y)
+      #
 
       # TODO ...add path selection
       close_enough_to_target = false
       past_target = false
-      if movement.world_target.nil? || close_enough_to_target || past_target
-        choose_next_target! movement
+      if moveable_tile.world_target.nil? || close_enough_to_target || past_target
+        choose_next_target! moveable_tile
       end
 
       # move toward target
-      target = movement.world_target
+      target = moveable_tile.world_target
       tx = target.x-tile_pos.x
       ty = target.y-tile_pos.y
 
-      movement.dir_vec = vec(tx,ty).unit
+      moveable_tile.dir_vec = vec(tx,ty).unit
       dist = Math.sqrt(tx*tx+ty*ty)
       if (dist < 1)
         if tile_pos.x < 300
-          movement.world_target = vec(tile_pos.x+512,tile_pos.y)
+          moveable_tile.world_target = vec(tile_pos.x+512,tile_pos.y)
         else
-          movement.world_target = vec(tile_pos.x-128,tile_pos.y)
+          moveable_tile.world_target = vec(tile_pos.x-128,tile_pos.y)
         end
       else
         thrust = 1
         vel_x = (tx/dist)*thrust;
         vel_y = (ty/dist)*thrust;
 
-        movement.vel.x = vel_x
-        movement.vel.y = vel_y
+        moveable_tile.vel.x = vel_x
+        moveable_tile.vel.y = vel_y
 
         x_step = vel_x < 0 ? -1 : 1
         vel_x.abs.round.times do
@@ -377,15 +378,15 @@ class MonsterSystem
   end
 
   NEIGHBOR_VECS = [
-    [0,-1],#up
-    [1,0], #right
-    [0,1], #down
-    [-1,0],#left
+    Vec::UP,
+    Vec::RIGHT,
+    Vec::DOWN,
+    Vec::LEFT,
   ]
-  def choose_next_target!(moving_tile)
-    current_dir_vec = moving_tile.dir_vec
-    path = moving_tile.path
-    path_target = moving_tile.path_target
+  def choose_next_target!(moveable_tile)
+    current_dir_vec = moveable_tile.dir_vec
+    path = moveable_tile.path
+    path_target = moveable_tile.path_target
 
     cont_path_target = path_target + current_dir_vec
     if path.include?(cont_path_target)
@@ -398,8 +399,8 @@ class MonsterSystem
     end
   end
 
-  def in_moving_tile?(moving_tiles, x, y, w, h)
-    moving_tiles.any? do |rec|
+  def in_moving_tile?(moveable_tiles, x, y, w, h)
+    moveable_tiles.any? do |rec|
       tile, tile_pos, tile_box = rec.components
       point_in_box?(x-w,y-h, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
         point_in_box?(x+w,y-h, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||

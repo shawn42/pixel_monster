@@ -1,4 +1,6 @@
 require 'chunky_png'
+require_relative 'vec'
+
 class SpecialTile
   attr_accessor :marker_color, :path
 end
@@ -47,6 +49,35 @@ class Path
   end
 end
 
+RELATIVE_DIR_MAP = {
+  Vec::UP => {
+    Vec::LEFT  => Vec::LEFT,
+    Vec::UP    => Vec::UP,
+    Vec::RIGHT => Vec::RIGHT,
+    Vec::DOWN  => Vec::DOWN,
+  },
+  Vec::RIGHT => {
+    Vec::LEFT  => Vec::UP,
+    Vec::UP    => Vec::RIGHT,
+    Vec::RIGHT => Vec::DOWN,
+    Vec::DOWN  => Vec::LEFT,
+  },
+  Vec::DOWN => {
+    Vec::LEFT  => Vec::RIGHT,
+    Vec::UP    => Vec::DOWN,
+    Vec::RIGHT => Vec::LEFT,
+    Vec::DOWN  => Vec::UP,
+  },
+  Vec::LEFT => {
+    Vec::LEFT  => Vec::DOWN,
+    Vec::UP    => Vec::LEFT,
+    Vec::RIGHT => Vec::UP,
+    Vec::DOWN  => Vec::RIGHT,
+  },
+}
+
+LEFT_HANDED_SEARCH = [ Vec::LEFT, Vec::UP, Vec::RIGHT, Vec::DOWN ]
+
 class Level
   START_COLOR = Gosu::Color::WHITE
   EXIT_COLOR = Gosu::Color::BLACK
@@ -67,7 +98,8 @@ class Level
           gosu_color = gosu_color_from_value v
 
           if gosu_color.alpha == MAX_ALPHA
-            special = map.special_tile_defs[gosu_color.abgr]
+            special_color = gosu_color.abgr
+            special = map.special_tile_defs[special_color]
             if gosu_color == START_COLOR
               map.player_x = c
               map.player_y = r
@@ -76,6 +108,13 @@ class Level
               map.exit_y = r
             elsif special
               map.tiles[c][r] = special
+              
+
+
+
+
+
+
               special.path = Path.new.tap do |path|
                 path.add_link [c,r], [c+1,r]
               end
