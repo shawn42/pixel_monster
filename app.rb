@@ -2,6 +2,7 @@ require 'gosu'
 require 'awesome_print'
 # require 'pry'
 
+require_relative 'vec'
 require_relative 'components'
 require_relative 'prefab'
 require_relative 'systems'
@@ -35,12 +36,12 @@ class PixelMonster < Gosu::Window
 
     @level_number = 1 if @level_number > @num_levels
 
-    filename = "level#{@level_number}.png"
-    @level = Level.load(filename)
+    @filename = "level#{@level_number}.png"
     reset_level
   end
 
   def reset_level
+    @level = Level.load(@filename)
     @level.reset! if @level
     @entity_manager = EntityManager.new
     Prefab.level entity_manager: @entity_manager, level: @level

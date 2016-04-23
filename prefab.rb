@@ -2,47 +2,49 @@ module Prefab
   include Gosu
   COLORS = [Color::AQUA,Color::BLUE,Color::CYAN,Color::FUCHSIA,Color::GRAY,Color::GREEN,Color::RED,Color::WHITE,Color::YELLOW]
 
+  TILE_WIDTH = 32
   def self.level(entity_manager:,level:)
     # XXX there's gotta be a bettery way to do this
     entity_manager.add_entity level
     map = level.map
 
-    tile_width = 32
     map.tiles.each do |c,ys|
       ys.each do |r,color|
         if color.is_a? Gosu::Color
-          tile(entity_manager: entity_manager, 
-                      x: c * tile_width+16, y: r*tile_width+16, color: Color::GRAY)
+          tile(entity_manager: entity_manager,
+                      x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
 
-          color_source(entity_manager: entity_manager, 
-                      x: c * tile_width+16, y: r*tile_width+16, color: color )
+          color_source(entity_manager: entity_manager,
+                      x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: color )
         else
           tile_def = color
           case color
           when BlackHoleTile
-            black_hole(entity_manager: entity_manager, subtract_color: tile_def.subtract_color,
-                        x: c * tile_width+16, y: r*tile_width+16 )
+            black_hole(entity_manager: entity_manager, tile_def: tile_def,
+                        x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
           when BouncyTile
-            tile(entity_manager: entity_manager, 
-                        x: c * tile_width+16, y: r*tile_width+16, color: Color::GRAY)
-            bouncy_tile(entity_manager: entity_manager, x: c * tile_width+16, y: r*tile_width+16 )
+            map.tiles[c].delete r
+            # tile(entity_manager: entity_manager,
+            #             x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
+            bouncy_tile(entity_manager: entity_manager, tile_def: tile_def, tile_x: c, tile_y: r, color: Color::GRAY)
           when DeathTile
-            death_tile(entity_manager: entity_manager, x: c * tile_width+16, y: r*tile_width+16 )
+            death_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
           else
             raise "unkown special tile #{special}"
           end
+
         end
       end
     end
 
     monster_exit(entity_manager: entity_manager, color: map.exit_color,
-                x: map.exit_x*tile_width+16, 
-                y: map.exit_y*tile_width+16)
+                x: map.exit_x*TILE_WIDTH+16,
+                y: map.exit_y*TILE_WIDTH+16)
 
 
     monster(entity_manager: entity_manager, color: Color::BLACK,
-            x: map.player_x * tile_width+16, 
-            y: map.player_y * tile_width+16)
+            x: map.player_x * TILE_WIDTH+16,
+            y: map.player_y * TILE_WIDTH+16)
   end
 
   def self.monster_exit(entity_manager:,x:,y:,color:)
@@ -54,14 +56,21 @@ module Prefab
       entity_manager.add_entity ColorSource.new, JoyColor.new(color), Position.new(x, y), Boxed.new(14,14)
   end
 
-  def self.black_hole(entity_manager:,subtract_color:,x:,y:)
+  def self.black_hole(entity_manager:,tile_def:,x:,y:)
+      subtract_color = tile_def.subtract_color
       entity_manager.add_entity BlackHole.new, Position.new(x, y), Boxed.new(14,14), JoyColor.new(Gosu::Color.rgba(30,30,30,255)), ColorSink.new(subtract_color)
   end
+  def self.bouncy_tile(entity_manager:,tile_def:, tile_x:,tile_y:, color:)
+      x = tile_x * TILE_WIDTH + 16
+      y = tile_y * TILE_WIDTH + 16
+      eid = entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(color)
 
-  def self.bouncy_tile(entity_manager:,x:,y:)
-      entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16)
+      path = tile_def.path
+      start = [tile_x,tile_y]
+      entity_manager.add_component(id:eid, component:MovableTile.new(path:path, start_node: start)) if path
+      eid
   end
-  def self.death_tile(entity_manager:,x:,y:)
+  def self.death_tile(entity_manager:,tile_def:,x:,y:)
     entity_manager.add_entity Death.new, Position.new(x, y), Boxed.new(16,16)
   end
 
@@ -75,4 +84,3 @@ module Prefab
   end
 
 end
-

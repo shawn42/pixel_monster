@@ -1,6 +1,10 @@
 require 'chunky_png'
-class BlackHoleTile
-  attr_accessor :marker_color, :subtract_color
+class SpecialTile
+  attr_accessor :marker_color, :path
+end
+
+class BlackHoleTile < SpecialTile
+  attr_accessor :subtract_color
   def self.from_colors(colors)
     self.new.tap do |t|
       t.marker_color = colors[1]
@@ -8,26 +12,45 @@ class BlackHoleTile
     end
   end
 end
-class BouncyTile
-  attr_accessor :marker_color
+class BouncyTile < SpecialTile
   def self.from_colors(colors)
     self.new.tap do |t|
       t.marker_color = colors[1]
     end
   end
 end
-class DeathTile
-  attr_accessor :marker_color
+class DeathTile < SpecialTile
   def self.from_colors(colors)
     self.new.tap do |t|
       t.marker_color = colors[1]
     end
+  end
+end
+class Path
+  def initialize
+    @links = {}
+    @current_node = nil
+  end
+
+  def add_link(from_vec, to_vec)
+    @current_node ||= from_vec
+    @links[from_vec] ||= []
+    @links[from_vec] << to_vec
+
+    @links[to_vec] ||= []
+    @links[to_vec] << from_vec
+  end
+
+  def next_node(from_vec, dir_vec)
+    # TODO add in directional stuff here
+    @links[@current_node].first
   end
 end
 
 class Level
   START_COLOR = Gosu::Color::WHITE
   EXIT_COLOR = Gosu::Color::BLACK
+  MAX_ALPHA = 255
   attr_accessor :map, :complete
   def self.load(filename)
     level = Level.new
@@ -43,18 +66,31 @@ class Level
         unless v == 0
           gosu_color = gosu_color_from_value v
 
-          special = map.special_tile_defs[gosu_color.abgr]
-          if gosu_color == START_COLOR
-            map.player_x = c
-            map.player_y = r
-          elsif gosu_color == EXIT_COLOR
-            map.exit_x = c
-            map.exit_y = r
-          elsif special
-            map.tiles[c][r] = special
-          else
-            colors << gosu_color
-            map.tiles[c][r] = gosu_color
+          if gosu_color.alpha == MAX_ALPHA
+            special = map.special_tile_defs[gosu_color.abgr]
+            if gosu_color == START_COLOR
+              map.player_x = c
+              map.player_y = r
+            elsif gosu_color == EXIT_COLOR
+              map.exit_x = c
+              map.exit_y = r
+            elsif special
+              map.tiles[c][r] = special
+              special.path = Path.new.tap do |path|
+                path.add_link [c,r], [c+1,r]
+              end
+
+              # path_seg_found = true
+              # while path_seg_found
+              # end
+              #
+              # check for path markers around it
+              # add to path
+              # attach path to tile somehow
+            else
+              colors << gosu_color
+              map.tiles[c][r] = gosu_color
+            end
           end
         end
       end
@@ -71,7 +107,7 @@ class Level
   def self.load_level_meta(level, png)
     map = level.map
     map.exit_color = gosu_color_from_value png[0,0]
-    
+
     command = nil
     (1..png.width-1).each do |c|
       a = ChunkyPNG::Color.a(png[c,0])
@@ -85,7 +121,7 @@ class Level
       end
     end
   end
-  
+
   def self.process_command(level, command)
     map = level.map
 
@@ -110,7 +146,7 @@ class Level
       ChunkyPNG::Color.r(v),
       ChunkyPNG::Color.g(v),
       ChunkyPNG::Color.b(v),
-      255)
+      ChunkyPNG::Color.a(v))
   end
 
   def map
@@ -142,13 +178,22 @@ end
 class Map
   # TODO do these need to be anything other than just T/F
   TILE_SIZE = 32
-  attr_accessor :tiles, 
+  HALF_TILE_SIZE = TILE_SIZE / 2
+  attr_accessor :tiles,
     :exit_x, :exit_y, :exit_color,
     :player_x, :player_y, :average_color,
     :special_tile_defs
   def initialize
     @tiles = Hash.new{|h,k|h[k] = {}}
     @special_tile_defs = {}
+  end
+
+  def map_to_world(tile_x, tile_y)
+    vec(world_x*TILE_SIZE, world_y*TILE_SIZE)
+  end
+
+  def world_to_map(world_x, world_y)
+    vec(world_x.round/TILE_SIZE, world_y.round/TILE_SIZE)
   end
 
   def blocked?(world_x, world_y)
@@ -162,4 +207,3 @@ class Map
     x == @exit_x && y == @exit_y
   end
 end
-

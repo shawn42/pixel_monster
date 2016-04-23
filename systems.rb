@@ -1,12 +1,3 @@
-# terrible vector class  =P
-class Array
-  def x; at(0) end
-  def y; at(1) end
-  def z; at(2) end
-  def x=(x); self[0] = x end
-  def y=(y); self[1] = y end
-  def z=(z); self[2] = z end
-end
 module Gosu
   class Color
     def info
@@ -31,8 +22,8 @@ class ParticlesEmitterSystem
 
       evt.intensity.times do
         entity_manager.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
-          Particle.new, JoyColor.new(evt.color), 
-          Velocity.new(SPEED.sample, SPEED.sample), Boxed.new(rand(3),rand(3)), EntityTarget.new(evt.target)
+          Particle.new, JoyColor.new(evt.color),
+          Velocity.new(x: SPEED.sample, y: SPEED.sample), Boxed.new(rand(3),rand(3)), EntityTarget.new(evt.target)
       end
 
       # entity_manager.remove_component klass: EmitParticlesEvent, id: ent_id
@@ -93,7 +84,7 @@ class MonsterSystem
       end
     end
 
-    if in_exit?(map, monster_pos, boxed) 
+    if in_exit?(map, monster_pos, boxed)
       if has_exit_color
         entity_manager.add_entity SoundEffectEvent.new(WIN_SOUND)
         level.complete!
@@ -102,18 +93,51 @@ class MonsterSystem
       end
     end
 
-    on_ground = on_ground?(map, monster_pos, boxed)
+    ground_below = on_ground?(map, monster_pos, boxed)
+
+    moving_tiles = entity_manager.find(MovableTile, Position, Boxed)
+
+    moving_tile_below = on_moving_tile?(map, monster_pos, boxed, moving_tiles)
+    # puts "moving tile below: #{moving_tile_below}"
+    on_moving_tile = moving_tile_below
+
+    tile_below = on_ground = ground_below || moving_tile_below
+    # puts "tile below: #{tile_below}"
+
     if on_ground
       monster_platform.last_grounded_at = input.total_time
-      should_boost = should_boost?(map, monster_pos, boxed)
+      moving_boosters = entity_manager.find(MovableTile, Position, Boxed, Bouncy)
+      should_boost = should_boost?(map, monster_pos, boxed, moving_boosters)
       monster_platform.last_tile_bouncy = should_boost
     end
 
     old_y_vel = vel.y
 
-    vel.y = 0 if on_ground
+    vel.y = 0 if on_ground && !on_moving_tile
     lateral_speed = dt/17.0
-    lateral_speed /= 0.5 unless on_ground
+    lateral_speed /= 0.5 unless on_ground && !on_moving_tile
+
+    if tile_below && on_moving_tile
+      # TODO unify the idea of friction across on ground and moving tiles?
+      dx = (tile_below.vel.x-vel.x)
+      dy = (tile_below.vel.y-vel.y)
+      lock_on_cutoff = 0.0001
+      ms_to_come_to_vel = 150.0
+      if dx.abs > lock_on_cutoff
+        x_scale = (dt/ms_to_come_to_vel)
+        x_scale = 1 if x_scale > 1
+        vel.x += dx * x_scale
+      else
+        vel.x = tile_below.vel.x
+      end
+      if dy.abs > lock_on_cutoff
+        y_scale = (dt/ms_to_come_to_vel)
+        y_scale = 1 if y_scale > 1
+        vel.y += dy * y_scale
+      else
+        vel.y = tile_below.vel.y
+      end
+    end
 
     if input.down?(Gosu::KbLeft) || input.down?(Gosu::GpLeft)
       vel.x -= lateral_speed
@@ -123,7 +147,7 @@ class MonsterSystem
 
     can_jump = (input.total_time - monster_platform.last_grounded_at) < JUMP_FORGIVENESS
     jumping = false
-    jump_strength = monster_platform.last_tile_bouncy ? SUPER_JUMP_HEIGHT : JUMP_HEIGHT 
+    jump_strength = monster_platform.last_tile_bouncy ? SUPER_JUMP_HEIGHT : JUMP_HEIGHT
     if (input.pressed?(Gosu::KbUp) || input.pressed?(Gosu::GpButton1)) && can_jump
       monster_platform.last_jump = jump_strength
       jumping = true
@@ -143,12 +167,12 @@ class MonsterSystem
 
 
     if vel.x > MAX_VEL
-      vel.x = MAX_VEL 
+      vel.x = MAX_VEL
     elsif vel.x < -MAX_VEL
       vel.x = -MAX_VEL
     end
     if vel.y > MAX_VEL
-      vel.y = MAX_VEL 
+      vel.y = MAX_VEL
     # elsif vel.y < -MAX_VEL
     #   vel.y = -MAX_VEL
     end
@@ -161,7 +185,8 @@ class MonsterSystem
       if map.blocked?(new_x-w, monster_pos.y-h) ||
         map.blocked?(new_x+w, monster_pos.y-h) ||
         map.blocked?(new_x-w, monster_pos.y+h) ||
-        map.blocked?(new_x+w, monster_pos.y+h)
+        map.blocked?(new_x+w, monster_pos.y+h) ||
+        in_moving_tile?(moving_tiles, new_x, monster_pos.y, w, h)
         vel.x = 0
         break
       else
@@ -176,7 +201,8 @@ class MonsterSystem
       if map.blocked?(monster_pos.x-w, new_y-h) ||
         map.blocked?(monster_pos.x+w, new_y-h) ||
         map.blocked?(monster_pos.x-w, new_y+h) ||
-        map.blocked?(monster_pos.x+w, new_y+h)
+        map.blocked?(monster_pos.x+w, new_y+h) ||
+        in_moving_tile?(moving_tiles, monster_pos.x, new_y, w, h)
         vel.y = 0
         monster_platform.jump_time = 0
         y_hit = vel.y
@@ -188,7 +214,7 @@ class MonsterSystem
 
     if on_ground
       vel.x *= 0.9
-    else
+    elsif
       vel.x *= 0.7
     end
 
@@ -238,7 +264,7 @@ class MonsterSystem
       if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
-        
+
         # TODO can I remove while iterating?!?!?
         dead_ents ||= []
         dead_ents << src_id
@@ -276,11 +302,6 @@ class MonsterSystem
       if rand(3) == 0
         entity_manager.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:subtract_color.color, target: black_hole_id, intensity: 1)
       end
-
-      # black_hole_color.color = blend_colors(base: black_hole_color.color, absorbed: Gosu::Color::BLACK, weight: 0.05)
-      # cool hair do for player
-      # entity_manager.add_entity monster_pos, EmitParticlesEvent.new(color:Prefab::COLORS.sample , target: black_hole_id, intensity: 3)
-
     end
 
     # DeathSystem
@@ -291,10 +312,99 @@ class MonsterSystem
       level.failed! if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
     end
 
+    # MovableTilesSystem
+    moving_tiles.each do |rec|
+      movement, tile_pos, tile_box = rec.components
+      # set new target if needed
+      # FAKE IT
+      movement.world_target ||= vec(tile_pos.x+128,tile_pos.y)
+
+      # TODO ...add path selection
+      close_enough_to_target = false
+      past_target = false
+      if movement.world_target.nil? || close_enough_to_target || past_target
+        choose_next_target! movement
+      end
+
+      # move toward target
+      target = movement.world_target
+      tx = target.x-tile_pos.x
+      ty = target.y-tile_pos.y
+
+      movement.dir_vec = vec(tx,ty).unit
+      dist = Math.sqrt(tx*tx+ty*ty)
+      if (dist < 1)
+        if tile_pos.x < 300
+          movement.world_target = vec(tile_pos.x+512,tile_pos.y)
+        else
+          movement.world_target = vec(tile_pos.x-128,tile_pos.y)
+        end
+      else
+        thrust = 1
+        vel_x = (tx/dist)*thrust;
+        vel_y = (ty/dist)*thrust;
+
+        movement.vel.x = vel_x
+        movement.vel.y = vel_y
+
+        x_step = vel_x < 0 ? -1 : 1
+        vel_x.abs.round.times do
+          if boxes_touch?(monster_pos, boxed, vec(tile_pos.x+x_step, tile_pos.y), tile_box, 0)
+            monster_pos.x += x_step
+            # TODO kill player if they cannot move
+          end
+          tile_pos.x += x_step
+        end
+
+        y_step = vel_y < 0 ? -1 : 1
+        vel_y.abs.round.times do
+          if boxes_touch?(monster_pos, boxed, vec(tile_pos.x, tile_pos.y+y_step), tile_box, 0)
+            monster_pos.y += y_step
+            # TODO kill player if they cannot move
+          end
+          tile_pos.y += y_step
+        end
+      end
+
+    end
+
+
     if dead_ents
       dead_ents.each do |dead_id|
         entity_manager.remove_entity dead_id
       end
+    end
+  end
+
+  NEIGHBOR_VECS = [
+    [0,-1],#up
+    [1,0], #right
+    [0,1], #down
+    [-1,0],#left
+  ]
+  def choose_next_target!(moving_tile)
+    current_dir_vec = moving_tile.dir_vec
+    path = moving_tile.path
+    path_target = moving_tile.path_target
+
+    cont_path_target = path_target + current_dir_vec
+    if path.include?(cont_path_target)
+      mov
+      return cont_path_target
+    else
+      NEIGHBOR_VECS.each do |nvec|
+        path_target = path_target + nvec
+      end
+    end
+  end
+
+  def in_moving_tile?(moving_tiles, x, y, w, h)
+    moving_tiles.any? do |rec|
+      tile, tile_pos, tile_box = rec.components
+      point_in_box?(x-w,y-h, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(x+w,y-h, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(x-w,y+h, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(x+w,y+h, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
     end
   end
 
@@ -308,7 +418,7 @@ class MonsterSystem
     map_c = map.exit_color
     ((color.red-map_c.red).abs +
     (color.green-map_c.green).abs +
-    (color.blue-map_c.blue).abs)/3.0 < allowed_diff 
+    (color.blue-map_c.blue).abs)/3.0 < allowed_diff
   end
 
   def in_exit?(map, pos, box)
@@ -320,23 +430,51 @@ class MonsterSystem
     map.in_exit?(pos.x-w, pos.y+h) || map.in_exit?(pos.x+w, pos.y+h)
   end
 
-  def on_ground?(map, pos, box)
+  def on_moving_tile?(map, pos, box, moving_tiles)
     x = pos.x
     y = pos.y
     w = box.width
     h = box.height
-
-    map.blocked?(pos.x-w, pos.y+h+1) || map.blocked?(pos.x+w, pos.y+h+1)
+    py = y+h+1
+    moving_tiles.each do |rec|
+      tile, tile_pos, tile_box = rec.components
+      return tile if point_in_box?(pos.x-w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(pos.x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
+    end
+    nil
   end
 
-  def should_boost?(map, pos, box)
+  def point_in_box?(px,py, sx,sy,sw,sh)
+    (sx-sw) <= px && px <= (sx+sw) && (sy-sh) <= py && py <= (sy+sh)
+  end
+
+  def on_ground?(map, pos, box)
+    w = box.width
+    h = box.height
+    py = pos.y+h+1
+
+    map.blocked?(pos.x-w, py) || map.blocked?(pos.x+w, py)
+  end
+
+  def should_boost?(map, pos, box, moving_boosters)
     x = pos.x
     y = pos.y
     w = box.width
     h = box.height
     left_tile = map.at(pos.x-w, pos.y+h+1)
     right_tile = map.at(pos.x+w, pos.y+h+1)
-    (left_tile && left_tile.is_a?(BouncyTile)) || (right_tile && right_tile.is_a?(BouncyTile))
+    (left_tile && left_tile.is_a?(BouncyTile)) || (right_tile && right_tile.is_a?(BouncyTile)) || moving_boost?(pos, box, moving_boosters)
+  end
+
+  def moving_boost?(pos, box, moving_tiles)
+    w = box.width
+    h = box.height
+    py = pos.y+h+1
+    moving_tiles.any? do |rec|
+      tile, tile_pos, tile_box, bouncy = rec.components
+      point_in_box?(pos.x-w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(pos.x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
+    end
   end
 
   def reflectance(absorbtionRatio)
@@ -395,7 +533,7 @@ class ParticlesSystem
       pos.y += vel.y * scalar
 
       target = entity_manager.find_by_id(ent_target.id, Position)
-      target_pos = 
+      target_pos =
         if target
           target.get(Position)
         else
@@ -406,12 +544,12 @@ class ParticlesSystem
       dy = (target_pos.y - pos.y) * scalar / 40
       vel.x += dx
       vel.y += dy
-      
+
       c = color.color
       color.color = Gosu::Color.rgba(c.red,c.green,c.blue,c.alpha-20*scalar)
       if color.color.alpha <= 0
         dead_ents ||= []
-        dead_ents << ent_id 
+        dead_ents << ent_id
       end
     end
 
@@ -433,7 +571,7 @@ class TimerSystem
           if timer.repeat
             timer.expires_at = current_time_ms + timer.total
           else
-            entity_manager.remove_component(klass: timer.class, id: ent_id)  
+            entity_manager.remove_component(klass: timer.class, id: ent_id)
           end
         end
       else
@@ -469,19 +607,31 @@ class SoundSystem
   end
 end
 
+class PathingSystem
+  def update(entity_manager, dt, input)
+    # map = entity_manager.find(Level).first.get(Level).map
+
+    entity_manager.each_entity(Velocity, Position, Pathable) do |rec|
+      ent_id = rec.id
+      vel, pos, pathable = rec.components
+
+    end
+  end
+end
+
 class BackgroundSystem
   def update(entity_manager, dt, input)
     map = entity_manager.find(Level).first.get(Level).map
 
     blobs = entity_manager.find(BackgroundBlob)
-    (8 - blobs.size).times do 
+    (8 - blobs.size).times do
       c = map.average_color
       x = [0 + rand(400), 1024 - rand(400)].sample
       y = [0 + rand(400), 1024 - rand(400)].sample
       color = Gosu::Color.rgba(c.red+rand(10)-5,c.green+rand(10)-5,c.blue+rand(10)-5,rand(10..70))
       entity_manager.add_entity Position.new(x,y,0),
         Boxed.new(rand(100..300),rand(100..300)), JoyColor.new(color),
-        Velocity.new(rand(10)-5,rand(10)-5), BackgroundBlob.new
+        Velocity.new(x: rand(10)-5, y: rand(10)-5), BackgroundBlob.new
     end
 
     entity_manager.each_entity(Velocity, BackgroundBlob, Position, JoyColor) do |rec|
@@ -493,7 +643,7 @@ class BackgroundSystem
       pos.y += vel.y * scalar
 
       if pos.x < -500 || pos.x > 1524 || pos.y > 1524 || pos.y < -500
-        entity_manager.remove_entity ent_id 
+        entity_manager.remove_entity ent_id
       end
     end
   end
@@ -558,14 +708,14 @@ class RenderSystem
       y = pos.y
       w = death_box.width
       h = death_box.height
-      n = 150
+      n = 50
 
-      n.times do 
+      n.times do
         rx = rand(x-w-4..x+w)
         ry = rand(y-h-4..y+h)
         rw = rand(2..4)
         rh = rand(2..4)
-        rc = Gosu::Color.rgba(rand(255),rand(255),rand(255),rand(255))
+        rc = Gosu::Color.rgba(rand(200),rand(200),rand(200),rand(200))
         z = 4
 
         target.draw_quad(rx, ry, rc, rx+rw, ry, rc, rx+rw, ry+rh, rc, rx, ry+rh, rc, z)
@@ -609,7 +759,7 @@ class ColorMix
     y = 0
     k = 0
     a = 0
-    colors = [ColorMix.to_cymk(color1), 
+    colors = [ColorMix.to_cymk(color1),
       ColorMix.to_cymk(color2)]
 
     colors.each do |color|
@@ -637,4 +787,3 @@ if $0 == __FILE__
   puts pretty_color( ColorMix.mix(Gosu::Color::RED, Gosu::Color::YELLOW) )
   puts pretty_color( ColorMix.mix(Gosu::Color::BLUE, Gosu::Color::YELLOW) )
 end
-

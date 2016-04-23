@@ -14,6 +14,14 @@ class EmitParticlesEvent
     @intensity = intensity
   end
 end
+class MovableTile
+  attr_accessor :path, :vel, :world_target, :dir_vec, :path_target
+  def initialize(path:, start_node:)
+    @path = path
+    @vel = vec(0,0)
+    @path_target = start_node
+  end
+end
 
 class Exit
   attr_accessor :open
@@ -54,12 +62,7 @@ class Position
   end
 end
 
-class Velocity
-  attr_accessor :x, :y
-  def initialize(x=0, y=0)
-    @x = x
-    @y = y
-  end
+class Velocity < Vec
 end
 
 class JoyColor

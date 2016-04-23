@@ -10,7 +10,7 @@ class EntityManager
   def find_by_id(id, *klasses)
     ent_record = @id_to_comp[id]
     components = ent_record.values_at(*klasses)
-    rec = build_record(id, components) unless components.any?(&:nil?) 
+    rec = build_record(id, components) unless components.any?(&:nil?)
     if block_given?
       yield rec
     else
@@ -48,6 +48,7 @@ class EntityManager
         results << build_record(id, components) unless components.any?(&:nil?)
       end
     end
+    nil
   end
 
   def remove_component(klass:, id:)
@@ -60,6 +61,7 @@ class EntityManager
         results.delete_if{|res| res.id == id}
       end
     end
+    nil
   end
 
   def remove_entites(ids)
@@ -131,7 +133,7 @@ class EntityManager
     result
   end
 
-  private 
+  private
   def generate_id
     @num_entities += 1
     @ent_counter ||= 0
@@ -180,11 +182,11 @@ if $0 == __FILE__
     x.report do
       n.times do |i|
         entity_manager.remove_entity player_id+n
-#         if i % 100 == 0 
+#         if i % 100 == 0
 #           entity_manager.add_component component: Player.new, id: player_id+i
 #         end
 #
-#         if i % 100 == 1 
+#         if i % 100 == 1
 #           entity_manager.remove_component klass: Player, id: player_id+i-1
 #         end
 #
@@ -196,20 +198,3 @@ if $0 == __FILE__
     end
   end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
