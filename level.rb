@@ -108,16 +108,14 @@ class Level
               map.exit_y = r
             elsif special
               map.tiles[c][r] = special
-              
 
-
-
-
-
-
-              special.path = Path.new.tap do |path|
-                path.add_link [c,r], [c+1,r]
-              end
+              start_loc = vec(c,r)
+              # TODO: implement 'find_path_locs' 
+              path_locs = find_path_locs(map.tiles, start_loc, gosu_color)
+              special.path = MovableTilePath.build(path_locs, start_loc, Vec::RIGHT, LEFT_HANDED_SEARCH)
+              # special.path = Path.new.tap do |path|
+              #   path.add_link [c,r], [c+1,r]
+              # end
 
               # path_seg_found = true
               # while path_seg_found
@@ -141,6 +139,16 @@ class Level
     map.average_color = Gosu::Color.rgba(avg_red, avg_green, avg_blue, 255)
 
     level
+  end
+
+  # TODO implement me
+  def self.find_path_locs(tiles, start_loc, gosu_color)
+    return [
+      vec(c-1,r),
+      vec(c-2,r),
+      vec(c,r-1),
+      vec(c+1,r),
+    ]
   end
 
   def self.load_level_meta(level, png)

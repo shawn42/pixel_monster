@@ -315,31 +315,28 @@ class MonsterSystem
     # MovableTilesSystem
     moving_tiles.each do |rec|
       moveable_tile, tile_pos, tile_box = rec.components
-      # set new target if needed
-      # FAKE IT
-      # moveable_tile.world_target ||= vec(tile_pos.x+128,tile_pos.y)
-      #
 
-      # TODO ...add path selection
-      close_enough_to_target = false
-      past_target = false
-      if moveable_tile.world_target.nil? || close_enough_to_target || past_target
-        choose_next_target! moveable_tile
+      # TODO: implement 'tile_to_world_coords' and 'abs_dist' and 'path_target_range'
+      target = tile_to_world_coords(moveable_tile.path.current)
+      close_enough_to_target = abs_dist(moveable_tile.pos - target) < path_target_range
+      if close_enough_to_target
+        moveable_tile.path.next
+        target = tile_to_world_coords(moveable_tile.path.current)
       end
 
       # move toward target
-      target = moveable_tile.world_target
       tx = target.x-tile_pos.x
       ty = target.y-tile_pos.y
 
       moveable_tile.dir_vec = vec(tx,ty).unit
       dist = Math.sqrt(tx*tx+ty*ty)
       if (dist < 1)
-        if tile_pos.x < 300
-          moveable_tile.world_target = vec(tile_pos.x+512,tile_pos.y)
-        else
-          moveable_tile.world_target = vec(tile_pos.x-128,tile_pos.y)
-        end
+        # XXX is this clause relevant given the updated logic above?
+        # if tile_pos.x < 300
+        #   moveable_tile.world_target = vec(tile_pos.x+512,tile_pos.y)
+        # else
+        #   moveable_tile.world_target = vec(tile_pos.x-128,tile_pos.y)
+        # end
       else
         thrust = 1
         vel_x = (tx/dist)*thrust;
@@ -377,27 +374,28 @@ class MonsterSystem
     end
   end
 
-  NEIGHBOR_VECS = [
-    Vec::UP,
-    Vec::RIGHT,
-    Vec::DOWN,
-    Vec::LEFT,
-  ]
-  def choose_next_target!(moveable_tile)
-    current_dir_vec = moveable_tile.dir_vec
-    path = moveable_tile.path
-    path_target = moveable_tile.path_target
-
-    cont_path_target = path_target + current_dir_vec
-    if path.include?(cont_path_target)
-      mov
-      return cont_path_target
-    else
-      NEIGHBOR_VECS.each do |nvec|
-        path_target = path_target + nvec
-      end
-    end
-  end
+  # XXX
+  # NEIGHBOR_VECS = [
+  #   Vec::UP,
+  #   Vec::RIGHT,
+  #   Vec::DOWN,
+  #   Vec::LEFT,
+  # ]
+  # def choose_next_target!(moveable_tile)
+  #   current_dir_vec = moveable_tile.dir_vec
+  #   path = moveable_tile.path
+  #   path_target = moveable_tile.path_target
+  #
+  #   cont_path_target = path_target + current_dir_vec
+  #   if path.include?(cont_path_target)
+  #     mov
+  #     return cont_path_target
+  #   else
+  #     NEIGHBOR_VECS.each do |nvec|
+  #       path_target = path_target + nvec
+  #     end
+  #   end
+  # end
 
   def in_moving_tile?(moveable_tiles, x, y, w, h)
     moveable_tiles.any? do |rec|
@@ -521,6 +519,22 @@ class MonsterSystem
 
     Gosu::Color.rgba(red, green, blue, base.alpha)
   end
+
+  # TODO implement me
+  def tile_to_world_coords(v)
+    return vec(0,0)
+  end
+
+  # TODO implement me
+  def abs_dist(v1,v2)
+    0
+  end
+
+  # TODO implement me
+  def path_target_range
+    32
+  end
+
 end
 class ParticlesSystem
   def update(entity_manager, dt, input)
