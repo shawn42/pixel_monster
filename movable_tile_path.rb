@@ -1,3 +1,4 @@
+require_relative 'path_walker'
 
 class MovableTilePath
   attr_reader :path_steps
@@ -21,7 +22,7 @@ class MovableTilePath
 
   def self.build(path_locs, start_loc, start_dir, rule)
     path_steps = PathWalker.build_path_steps(path_locs,start_loc,start_dir,rule)
-    return MovableTilePath.new(path_steps)
+    p path_steps
+    path_steps && !path_steps.empty? ? MovableTilePath.new(path_steps) : nil
   end
 end
-

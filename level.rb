@@ -1,5 +1,6 @@
 require 'chunky_png'
 require_relative 'vec'
+require_relative 'movable_tile_path'
 
 class SpecialTile
   attr_accessor :marker_color, :path
@@ -107,23 +108,12 @@ class Level
               map.exit_x = c
               map.exit_y = r
             elsif special
+              puts "SPECIAL!"
               map.tiles[c][r] = special
 
               start_loc = vec(c,r)
-              # TODO: implement 'find_path_locs' 
-              path_locs = find_path_locs(map.tiles, start_loc, gosu_color)
+              path_locs = find_path_locs(png, start_loc, gosu_color)
               special.path = MovableTilePath.build(path_locs, start_loc, Vec::RIGHT, LEFT_HANDED_SEARCH)
-              # special.path = Path.new.tap do |path|
-              #   path.add_link [c,r], [c+1,r]
-              # end
-
-              # path_seg_found = true
-              # while path_seg_found
-              # end
-              #
-              # check for path markers around it
-              # add to path
-              # attach path to tile somehow
             else
               colors << gosu_color
               map.tiles[c][r] = gosu_color
@@ -141,14 +131,34 @@ class Level
     level
   end
 
-  # TODO implement me
-  def self.find_path_locs(tiles, start_loc, gosu_color)
-    return [
-      vec(c-1,r),
-      vec(c-2,r),
-      vec(c,r-1),
-      vec(c+1,r),
-    ]
+  NEIGHBOR_VECS = [
+    Vec::UP,
+    Vec::RIGHT,
+    Vec::DOWN,
+    Vec::LEFT,
+  ]
+  def self.find_path_locs(png, start_loc, path_color)
+    path_locs = []
+    open_list = [start_loc]
+
+    until open_list.empty?
+      active_node = open_list.pop
+      NEIGHBOR_VECS.map do |n_vec|
+        loc = active_node + n_vec
+        color = gosu_color_from_value png[loc.x,loc.y+1]
+        if color && !path_locs.include?(loc)
+          if color.red == path_color.red &&
+            color.green == path_color.green &&
+            color.blue == path_color.blue &&
+            color.alpha < MAX_ALPHA
+            open_list << loc
+          end
+        end
+      end
+
+      path_locs << active_node
+    end
+    path_locs
   end
 
   def self.load_level_meta(level, png)
@@ -236,7 +246,7 @@ class Map
   end
 
   def map_to_world(tile_x, tile_y)
-    vec(world_x*TILE_SIZE, world_y*TILE_SIZE)
+    vec(tile_x*TILE_SIZE, tile_y*TILE_SIZE)
   end
 
   def world_to_map(world_x, world_y)

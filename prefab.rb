@@ -66,8 +66,8 @@ module Prefab
       eid = entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(color)
 
       path = tile_def.path
-      start = [tile_x,tile_y]
-      entity_manager.add_component(id:eid, component:MovableTile.new(path:path, start_node: start, dir_vec: Vec::RIGHT)])) if path
+      start = vec(tile_x,tile_y)
+      entity_manager.add_component( id:eid, component: MovableTile.new(path:path, start_node: start, dir_vec: Vec::RIGHT) ) if path
       eid
   end
   def self.death_tile(entity_manager:,tile_def:,x:,y:)

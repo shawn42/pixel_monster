@@ -306,7 +306,6 @@ class MonsterSystem
 
     # DeathSystem
     entity_manager.each_entity(Death, Position, Boxed) do |rec|
-      death_id = rec.id
       death, pos, death_box = rec.components
 
       level.failed! if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
@@ -316,12 +315,13 @@ class MonsterSystem
     moving_tiles.each do |rec|
       moveable_tile, tile_pos, tile_box = rec.components
 
-      # TODO: implement 'tile_to_world_coords' and 'abs_dist' and 'path_target_range'
-      target = tile_to_world_coords(moveable_tile.path.current)
-      close_enough_to_target = abs_dist(moveable_tile.pos - target) < path_target_range
+      path_target_range = 1
+      target = tile_to_world_coords(map, moveable_tile.path.current)
+      close_enough_to_target = (tile_pos.to_vec - target).magnitude < path_target_range
+
       if close_enough_to_target
         moveable_tile.path.next
-        target = tile_to_world_coords(moveable_tile.path.current)
+        target = tile_to_world_coords(map, moveable_tile.path.current)
       end
 
       # move toward target
@@ -374,29 +374,6 @@ class MonsterSystem
     end
   end
 
-  # XXX
-  # NEIGHBOR_VECS = [
-  #   Vec::UP,
-  #   Vec::RIGHT,
-  #   Vec::DOWN,
-  #   Vec::LEFT,
-  # ]
-  # def choose_next_target!(moveable_tile)
-  #   current_dir_vec = moveable_tile.dir_vec
-  #   path = moveable_tile.path
-  #   path_target = moveable_tile.path_target
-  #
-  #   cont_path_target = path_target + current_dir_vec
-  #   if path.include?(cont_path_target)
-  #     mov
-  #     return cont_path_target
-  #   else
-  #     NEIGHBOR_VECS.each do |nvec|
-  #       path_target = path_target + nvec
-  #     end
-  #   end
-  # end
-
   def in_moving_tile?(moveable_tiles, x, y, w, h)
     moveable_tiles.any? do |rec|
       tile, tile_pos, tile_box = rec.components
@@ -426,7 +403,7 @@ class MonsterSystem
     w = box.width
     h = box.height
 
-    map.in_exit?(pos.x-w, pos.y+h) || map.in_exit?(pos.x+w, pos.y+h)
+    map.in_exit?(x-w, y+h) || map.in_exit?(x+w, y+h)
   end
 
   def on_moving_tile?(map, pos, box, moving_tiles)
@@ -437,8 +414,8 @@ class MonsterSystem
     py = y+h+1
     moving_tiles.each do |rec|
       tile, tile_pos, tile_box = rec.components
-      return tile if point_in_box?(pos.x-w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
-        point_in_box?(pos.x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
+      return tile if point_in_box?(x-w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
     end
     nil
   end
@@ -456,8 +433,6 @@ class MonsterSystem
   end
 
   def should_boost?(map, pos, box, moving_boosters)
-    x = pos.x
-    y = pos.y
     w = box.width
     h = box.height
     left_tile = map.at(pos.x-w, pos.y+h+1)
@@ -520,19 +495,8 @@ class MonsterSystem
     Gosu::Color.rgba(red, green, blue, base.alpha)
   end
 
-  # TODO implement me
-  def tile_to_world_coords(v)
-    return vec(0,0)
-  end
-
-  # TODO implement me
-  def abs_dist(v1,v2)
-    0
-  end
-
-  # TODO implement me
-  def path_target_range
-    32
+  def tile_to_world_coords(map, v)
+    map.map_to_world(v.x, v.y)
   end
 
 end
@@ -716,7 +680,6 @@ class RenderSystem
     end
 
     entity_manager.each_entity(Position, Boxed, Death) do |rec|
-      death_id = rec.id
       pos, death_box, death = rec.components
 
       x = pos.x
