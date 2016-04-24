@@ -8,7 +8,7 @@ class MovableTilePath
     @current_index = 0
   end
 
-  def next
+  def next!
     @current_index += 1
     if @current_index >= @path_steps.size
       @current_index = 0

@@ -2,6 +2,27 @@ class PathWalker
   def self.build_path_steps(path_locs, start_loc, start_dir, rule)
     path = []
 
+    wall_dir = nil
+    Vec::NEIGHBOR_VECS.each do |n_vec|
+      if !path_locs.include?(start_loc + n_vec)
+        wall_dir = n_vec
+        break
+      end
+    end
+
+    case wall_dir
+    when Vec::DOWN
+      start_dir = Vec::LEFT
+    when Vec::UP
+      start_dir = Vec::RIGHT
+    when Vec::LEFT
+      start_dir = Vec::UP
+    when Vec::RIGHT
+      start_dir = Vec::DOWN
+    else # this shouldn't happen
+      start_dir = Vec::RIGHT
+    end
+
     loc = start_loc
     dir = start_dir
     first_next = nil

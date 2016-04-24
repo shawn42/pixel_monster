@@ -49,4 +49,11 @@ class Vec
   DOWN = vec(0,1)
   LEFT = vec(-1,0)
 
+  NEIGHBOR_VECS = [
+    Vec::RIGHT,
+    Vec::UP,
+    Vec::DOWN,
+    Vec::LEFT,
+  ]
+
 end

@@ -131,19 +131,13 @@ class Level
     level
   end
 
-  NEIGHBOR_VECS = [
-    Vec::UP,
-    Vec::RIGHT,
-    Vec::DOWN,
-    Vec::LEFT,
-  ]
   def self.find_path_locs(png, start_loc, path_color)
     path_locs = []
     open_list = [start_loc]
 
     until open_list.empty?
       active_node = open_list.pop
-      NEIGHBOR_VECS.map do |n_vec|
+      Vec::NEIGHBOR_VECS.map do |n_vec|
         loc = active_node + n_vec
         color = gosu_color_from_value png[loc.x,loc.y+1]
         if color && !path_locs.include?(loc)

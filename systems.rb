@@ -320,7 +320,7 @@ class MonsterSystem
       close_enough_to_target = (tile_pos.to_vec - target).magnitude < path_target_range
 
       if close_enough_to_target
-        moveable_tile.path.next
+        moveable_tile.path.next!
         target = tile_to_world_coords(map, moveable_tile.path.current)
       end
 
