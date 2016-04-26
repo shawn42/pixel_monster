@@ -10,6 +10,9 @@ module Prefab
 
     map.tiles.each do |c,ys|
       ys.each do |r,color|
+        eid = nil
+        tile_def = color
+
         if color.is_a? Gosu::Color
           tile(entity_manager: entity_manager,
                       x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
@@ -17,23 +20,29 @@ module Prefab
           color_source(entity_manager: entity_manager,
                       x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: color )
         else
-          tile_def = color
-          case color
+          case tile_def
           when BlackHoleTile
-            black_hole(entity_manager: entity_manager, tile_def: tile_def,
+            eid = black_hole(entity_manager: entity_manager, tile_def: tile_def,
                         x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
           when BouncyTile
-            map.tiles[c].delete r
             # tile(entity_manager: entity_manager,
             #             x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
-            bouncy_tile(entity_manager: entity_manager, tile_def: tile_def, tile_x: c, tile_y: r, color: Color::GRAY)
+            eid = bouncy_tile(entity_manager: entity_manager, tile_def: tile_def, tile_x: c, tile_y: r, color: Color::GRAY)
           when DeathTile
-            death_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
+            eid = death_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
           else
             raise "unkown special tile #{special}"
           end
-
         end
+
+
+        if eid && tile_def.path
+          map.tiles[c].delete r
+          path = tile_def.path
+          start = vec(c,r)
+          entity_manager.add_component( id:eid, component: MovableTile.new(path:path, start_node: start, dir_vec: Vec::RIGHT) )
+        end
+
       end
     end
 
@@ -63,12 +72,7 @@ module Prefab
   def self.bouncy_tile(entity_manager:,tile_def:, tile_x:,tile_y:, color:)
       x = tile_x * TILE_WIDTH + 16
       y = tile_y * TILE_WIDTH + 16
-      eid = entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(color)
-
-      path = tile_def.path
-      start = vec(tile_x,tile_y)
-      entity_manager.add_component( id:eid, component: MovableTile.new(path:path, start_node: start, dir_vec: Vec::RIGHT) ) if path
-      eid
+      entity_manager.add_entity Bouncy.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(color)
   end
   def self.death_tile(entity_manager:,tile_def:,x:,y:)
     entity_manager.add_entity Death.new, Position.new(x, y), Boxed.new(16,16)

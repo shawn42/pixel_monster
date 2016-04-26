@@ -97,6 +97,9 @@ class MonsterSystem
 
     moving_tiles = entity_manager.find(MovableTile, Position, Boxed)
 
+
+    # TODO, maybe move tiles first to address jumping bug
+
     moving_tile_below = on_moving_tile?(map, monster_pos, boxed, moving_tiles)
     # puts "moving tile below: #{moving_tile_below}"
     on_moving_tile = moving_tile_below

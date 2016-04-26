@@ -20,9 +20,8 @@ class MovableTilePath
     @path_steps[@current_index]
   end
 
-  def self.build(path_locs, start_loc, start_dir, rule)
-    path_steps = PathWalker.build_path_steps(path_locs,start_loc,start_dir,rule)
-    p path_steps
+  def self.build(path_locs, start_loc, rule)
+    path_steps = PathWalker.build_path_steps(path_locs,start_loc,rule)
     path_steps && !path_steps.empty? ? MovableTilePath.new(path_steps) : nil
   end
 end

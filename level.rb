@@ -29,26 +29,6 @@ class DeathTile < SpecialTile
     end
   end
 end
-class Path
-  def initialize
-    @links = {}
-    @current_node = nil
-  end
-
-  def add_link(from_vec, to_vec)
-    @current_node ||= from_vec
-    @links[from_vec] ||= []
-    @links[from_vec] << to_vec
-
-    @links[to_vec] ||= []
-    @links[to_vec] << from_vec
-  end
-
-  def next_node(from_vec, dir_vec)
-    # TODO add in directional stuff here
-    @links[@current_node].first
-  end
-end
 
 RELATIVE_DIR_MAP = {
   Vec::UP => {
@@ -108,12 +88,15 @@ class Level
               map.exit_x = c
               map.exit_y = r
             elsif special
-              puts "SPECIAL!"
               map.tiles[c][r] = special
 
               start_loc = vec(c,r)
               path_locs = find_path_locs(png, start_loc, gosu_color)
-              special.path = MovableTilePath.build(path_locs, start_loc, Vec::RIGHT, LEFT_HANDED_SEARCH)
+              p path_locs
+              if path_locs.size > 1
+                special.path = MovableTilePath.build(path_locs, start_loc, LEFT_HANDED_SEARCH)
+                p special.path
+              end
             else
               colors << gosu_color
               map.tiles[c][r] = gosu_color
@@ -240,7 +223,7 @@ class Map
   end
 
   def map_to_world(tile_x, tile_y)
-    vec(tile_x*TILE_SIZE, tile_y*TILE_SIZE)
+    vec(tile_x*TILE_SIZE+TILE_SIZE/2, tile_y*TILE_SIZE+TILE_SIZE/2)
   end
 
   def world_to_map(world_x, world_y)
