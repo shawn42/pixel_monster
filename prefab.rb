@@ -4,39 +4,36 @@ module Prefab
 
   TILE_WIDTH = 32
   def self.level(entity_manager:,level:)
-    # XXX there's gotta be a bettery way to do this
+    # XXX there's gotta be a better way to do this
     entity_manager.add_entity level
     map = level.map
 
+    to_delete = []
     map.tiles.each do |c,ys|
       ys.each do |r,color|
         eid = nil
         tile_def = color
 
-        if color.is_a? Gosu::Color
-          tile(entity_manager: entity_manager,
-                      x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
-
-          color_source(entity_manager: entity_manager,
-                      x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: color )
+        case tile_def
+        when ColorSourceTile
+          eid = color_source(entity_manager: entity_manager,
+                      x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: tile_def.marker_color )
+        when BlackHoleTile
+          eid = black_hole(entity_manager: entity_manager, tile_def: tile_def,
+                      x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
+        when BouncyTile
+          # tile(entity_manager: entity_manager,
+          #             x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
+          eid = bouncy_tile(entity_manager: entity_manager, tile_def: tile_def, tile_x: c, tile_y: r, color: Color::GRAY)
+        when DeathTile
+          eid = death_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
         else
-          case tile_def
-          when BlackHoleTile
-            eid = black_hole(entity_manager: entity_manager, tile_def: tile_def,
-                        x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
-          when BouncyTile
-            # tile(entity_manager: entity_manager,
-            #             x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
-            eid = bouncy_tile(entity_manager: entity_manager, tile_def: tile_def, tile_x: c, tile_y: r, color: Color::GRAY)
-          when DeathTile
-            eid = death_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
-          else
-            raise "unkown special tile #{special}"
-          end
+          raise "unkown special tile #{special}"
         end
 
 
         if eid && tile_def.path
+          to_delete << vec(c,r)
           map.tiles[c].delete r
           path = tile_def.path
           start = vec(c,r)
@@ -44,6 +41,9 @@ module Prefab
         end
 
       end
+    end
+    to_delete.each do |v|
+      map.tiles[v.x].delete v.y
     end
 
     monster_exit(entity_manager: entity_manager, color: map.exit_color,
@@ -62,7 +62,8 @@ module Prefab
   end
 
   def self.color_source(entity_manager:,x:,y:,color:)
-      entity_manager.add_entity ColorSource.new, JoyColor.new(color), Position.new(x, y), Boxed.new(14,14)
+      # TODO add border on Boxed?
+      entity_manager.add_entity ColorSource.new, JoyColor.new(color), Position.new(x, y), Boxed.new(16,16)
   end
 
   def self.black_hole(entity_manager:,tile_def:,x:,y:)

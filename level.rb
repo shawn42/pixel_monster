@@ -1,9 +1,25 @@
 require 'chunky_png'
 require_relative 'vec'
 require_relative 'movable_tile_path'
+class Gosu::Color
+  def to_s
+    "RGBA: #{red}-#{green}-#{blue}-#{alpha}"
+  end
+end
 
-class SpecialTile
+class Tile
   attr_accessor :marker_color, :path
+end
+
+class ColorSourceTile < Tile
+  def self.from_color(color)
+    self.new.tap do |t|
+      t.marker_color = color
+    end
+  end
+end
+
+class SpecialTile < Tile
 end
 
 class BlackHoleTile < SpecialTile
@@ -87,19 +103,16 @@ class Level
             elsif gosu_color == EXIT_COLOR
               map.exit_x = c
               map.exit_y = r
-            elsif special
-              map.tiles[c][r] = special
+            else
+              tile = special || ColorSourceTile.from_color(gosu_color)
+              map.tiles[c][r] = tile
 
               start_loc = vec(c,r)
               path_locs = find_path_locs(png, start_loc, gosu_color)
-              p path_locs
               if path_locs.size > 1
-                special.path = MovableTilePath.build(path_locs, start_loc, LEFT_HANDED_SEARCH)
-                p special.path
+                tile.path = MovableTilePath.build(path_locs, start_loc, LEFT_HANDED_SEARCH)
               end
-            else
-              colors << gosu_color
-              map.tiles[c][r] = gosu_color
+              colors << gosu_color unless special
             end
           end
         end
@@ -122,8 +135,16 @@ class Level
       active_node = open_list.pop
       Vec::NEIGHBOR_VECS.map do |n_vec|
         loc = active_node + n_vec
-        color = gosu_color_from_value png[loc.x,loc.y+1]
+        color = nil
+        if (0...32).include?(loc.x) and (0...32).include?(loc.y)
+          color = gosu_color_from_value png[loc.x,loc.y+1]
+        end
+
         if color && !path_locs.include?(loc)
+          # puts "red: #{color.red} vs #{path_color.red}"
+          # puts "green: #{color.green} vs #{path_color.green}"
+          # puts "blue: #{color.blue} vs #{path_color.blue}"
+          # puts "alpha: #{color.alpha}"
           if color.red == path_color.red &&
             color.green == path_color.green &&
             color.blue == path_color.blue &&

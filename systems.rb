@@ -101,10 +101,9 @@ class MonsterSystem
     # TODO, maybe move tiles first to address jumping bug
 
     moving_tile_below = on_moving_tile?(map, monster_pos, boxed, moving_tiles)
-    # puts "moving tile below: #{moving_tile_below}"
     on_moving_tile = moving_tile_below
 
-    tile_below = on_ground = ground_below || moving_tile_below
+    tile_below = on_ground = moving_tile_below || ground_below
     # puts "tile below: #{tile_below}"
 
     if on_ground
@@ -255,6 +254,38 @@ class MonsterSystem
     # ColorStuffSystem
     dead_ents = nil
 
+    entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed, MovableTile) do |rec|
+      src_id = rec.id
+      src, pos, source_color, box, movable = rec.components
+      sc = source_color.color
+
+      x_off = pos.x - monster_pos.x
+      y_off = pos.y - monster_pos.y
+      dist = x_off*x_off+y_off*y_off
+
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+        blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
+        monster_color.color = blended_color
+
+        dead_ents ||= []
+        dead_ents << src_id
+
+        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+        # TODO this is only a box to draw.. need to replace with movabletile?
+
+        eid = Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+        entity_manager.add_component( id:eid, component: movable )
+      end
+    end
+    if dead_ents
+      dead_ents.each do |dead_id|
+        entity_manager.remove_entity dead_id
+      end
+      dead_ents = []
+    end
+
+
     entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed) do |rec|
       src_id = rec.id
       src, pos, source_color, box = rec.components
@@ -268,13 +299,12 @@ class MonsterSystem
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
 
-        # TODO can I remove while iterating?!?!?
         dead_ents ||= []
         dead_ents << src_id
-        # entity_manager.remove_entity src_id
-        # TODO can I add while iterating safely?
+
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+        Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
       end
     end
 
@@ -318,9 +348,11 @@ class MonsterSystem
     moving_tiles.each do |rec|
       moveable_tile, tile_pos, tile_box = rec.components
 
+      next if moveable_tile.path.nil?
       path_target_range = 1
       target = tile_to_world_coords(map, moveable_tile.path.current)
-      close_enough_to_target = (tile_pos.to_vec - target).magnitude < path_target_range
+      dist = (tile_pos.to_vec - target).magnitude
+      close_enough_to_target = dist < path_target_range
 
       if close_enough_to_target
         moveable_tile.path.next!
@@ -332,39 +364,46 @@ class MonsterSystem
       ty = target.y-tile_pos.y
 
       moveable_tile.dir_vec = vec(tx,ty).unit
-      dist = Math.sqrt(tx*tx+ty*ty)
-      if (dist < 1)
-        # XXX is this clause relevant given the updated logic above?
-        # if tile_pos.x < 300
-        #   moveable_tile.world_target = vec(tile_pos.x+512,tile_pos.y)
-        # else
-        #   moveable_tile.world_target = vec(tile_pos.x-128,tile_pos.y)
-        # end
-      else
-        thrust = 1
-        vel_x = (tx/dist)*thrust;
-        vel_y = (ty/dist)*thrust;
 
-        moveable_tile.vel.x = vel_x
-        moveable_tile.vel.y = vel_y
+      thrust = 1
+      vel_x = dist > 0 ? (tx/dist)*thrust : 0
+      vel_y = dist > 0 ? (ty/dist)*thrust : 0
 
-        x_step = vel_x < 0 ? -1 : 1
-        vel_x.abs.round.times do
-          if boxes_touch?(monster_pos, boxed, vec(tile_pos.x+x_step, tile_pos.y), tile_box, 0)
-            monster_pos.x += x_step
-            # TODO kill player if they cannot move
+      moveable_tile.vel.x = vel_x
+      moveable_tile.vel.y = vel_y
+
+      x_step = vel_x < 0 ? -1 : 1
+      w = boxed.width
+      h = boxed.height
+      vel_x.abs.round.times do
+        if boxes_touch?(monster_pos, boxed, vec(tile_pos.x+x_step, tile_pos.y), tile_box, 0)
+          monster_pos.x += x_step
+          if in_moving_tile?(moving_tiles, monster_pos.x + x_step, monster_pos.y, w, h) ||
+            map.blocked?(monster_pos.x-w, monster_pos.y-h) ||
+            map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
+            map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
+            map.blocked?(monster_pos.x+w, monster_pos.y+h)
+            level.failed!
           end
-          tile_pos.x += x_step
         end
+        tile_pos.x += x_step
+      end
 
-        y_step = vel_y < 0 ? -1 : 1
-        vel_y.abs.round.times do
-          if boxes_touch?(monster_pos, boxed, vec(tile_pos.x, tile_pos.y+y_step), tile_box, 0)
-            monster_pos.y += y_step
-            # TODO kill player if they cannot move
+      y_step = vel_y < 0 ? -1 : 1
+      vel_y.abs.round.times do
+        if boxes_touch?(monster_pos, boxed, vec(tile_pos.x, tile_pos.y+y_step), tile_box, 0)
+          monster_pos.y += y_step
+
+          if in_moving_tile?(moving_tiles, monster_pos.x + x_step, monster_pos.y, w, h) ||
+            map.blocked?(monster_pos.x-w, monster_pos.y-h) ||
+            map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
+            map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
+            map.blocked?(monster_pos.x+w, monster_pos.y+h)
+            level.failed!
           end
-          tile_pos.y += y_step
+
         end
+        tile_pos.y += y_step
       end
 
     end
