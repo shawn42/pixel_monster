@@ -104,7 +104,7 @@ class Level
               map.exit_x = c
               map.exit_y = r
             else
-              tile = special || ColorSourceTile.from_color(gosu_color)
+              tile = special ? special.dup : ColorSourceTile.from_color(gosu_color)
               map.tiles[c][r] = tile
 
               start_loc = vec(c,r)

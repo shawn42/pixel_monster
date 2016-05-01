@@ -1,8 +1,5 @@
 BUGS
- - cannot jump when riding down on moving tile
- - once on moving tile, shouldn't slide any more (cept on vel changes)
  - clean up duplicate code for color source consumption
- - same color tiles track to same target if movable
 
 additional music, can be dynamically generated?!!
 rainbow pixels (change color, encode in header bits)

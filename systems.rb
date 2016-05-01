@@ -97,9 +97,6 @@ class MonsterSystem
 
     moving_tiles = entity_manager.find(MovableTile, Position, Boxed)
 
-
-    # TODO, maybe move tiles first to address jumping bug
-
     moving_tile_below = on_moving_tile?(map, monster_pos, boxed, moving_tiles)
     on_moving_tile = moving_tile_below
 
@@ -116,14 +113,11 @@ class MonsterSystem
     old_y_vel = vel.y
 
     vel.y = 0 if on_ground && !on_moving_tile
-    lateral_speed = dt/17.0
-    lateral_speed /= 0.5 unless on_ground && !on_moving_tile
 
     if tile_below && on_moving_tile
       # TODO unify the idea of friction across on ground and moving tiles?
       dx = (tile_below.vel.x-vel.x)
-      dy = (tile_below.vel.y-vel.y)
-      lock_on_cutoff = 0.0001
+      lock_on_cutoff = 0.01
       ms_to_come_to_vel = 150.0
       if dx.abs > lock_on_cutoff
         x_scale = (dt/ms_to_come_to_vel)
@@ -132,15 +126,12 @@ class MonsterSystem
       else
         vel.x = tile_below.vel.x
       end
-      if dy.abs > lock_on_cutoff
-        y_scale = (dt/ms_to_come_to_vel)
-        y_scale = 1 if y_scale > 1
-        vel.y += dy * y_scale
-      else
-        vel.y = tile_below.vel.y
-      end
+      vel.y = tile_below.vel.y
     end
 
+
+    lateral_speed = dt/17.0
+    lateral_speed /= 0.5 unless on_ground && !on_moving_tile
     if input.down?(Gosu::KbLeft) || input.down?(Gosu::GpLeft)
       vel.x -= lateral_speed
     elsif input.down?(Gosu::KbRight) || input.down?(Gosu::GpRight)
@@ -214,10 +205,12 @@ class MonsterSystem
       end
     end
 
-    if on_ground
-      vel.x *= 0.9
-    elsif
-      vel.x *= 0.7
+    unless on_moving_tile
+      if on_ground
+        vel.x *= 0.9
+      elsif
+        vel.x *= 0.7
+      end
     end
 
     if jumping
@@ -456,8 +449,13 @@ class MonsterSystem
     py = y+h+1
     moving_tiles.each do |rec|
       tile, tile_pos, tile_box = rec.components
-      return tile if point_in_box?(x-w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
-        point_in_box?(x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
+      return tile if 
+        # on it
+        point_in_box?(x-w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        # or just 1 px above it
+        point_in_box?(x-w,py+1, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
+        point_in_box?(x+w,py+1, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
     end
     nil
   end
