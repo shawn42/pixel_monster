@@ -731,9 +731,9 @@ class RenderSystem
       n.times do
         rx = rand(x-w-4..x+w)
         ry = rand(y-h-4..y+h)
-        rw = rand(2..4)
-        rh = rand(2..4)
-        rc = Gosu::Color.rgba(rand(200),rand(200),rand(200),rand(200))
+        rw = rand(2..5)
+        rh = rand(2..5)
+        rc = Gosu::Color.rgba(rand(200)+50,rand(200)+50,rand(200)+50,rand(35)+220)
         z = 4
 
         target.draw_quad(rx, ry, rc, rx+rw, ry, rc, rx+rw, ry+rh, rc, rx, ry+rh, rc, z)
