@@ -19,7 +19,7 @@ class PathWalker
       next_loc = nil
       rule.each do |rel_search_dir|
         abs_search_dir = RELATIVE_DIR_MAP[dir][rel_search_dir]
-        search_loc = loc + abs_search_dir # RELATIVE_DIR_MAP[dir][rel_search_dir]
+        search_loc = loc + abs_search_dir
         if path_locs.include?(search_loc)
           next_loc = search_loc
           dir = abs_search_dir
@@ -27,6 +27,7 @@ class PathWalker
         end
       end
       if loc == start_loc and next_loc == first_next
+        puts "WARNING: did not use all transparent path locations" unless (path_locs - path).empty?
         return path
       end
       path << loc
