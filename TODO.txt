@@ -4,6 +4,8 @@ BUGS
 additional music, can be dynamically generated?!!
 rainbow pixels (change color, encode in header bits)
 add magic pixel (sets you to target color)
+add level timer
+add timer high scores
 
 
 add border property to color / boxed?
