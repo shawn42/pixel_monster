@@ -19,7 +19,7 @@ class PixelMonster < Gosu::Window
     @entity_manager = EntityManager.new
     @input_cacher = InputCacher.new
     @level_number = (ARGV[0] || 1).to_i - 1
-    @num_levels = Dir['./level*.png'].size
+    @num_levels = Dir['./levels/level*.png'].size
     @music = Gosu::Song.new 'music.wav'
     next_level
     build_systems

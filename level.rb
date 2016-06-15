@@ -84,7 +84,7 @@ class Level
     level = Level.new
     map = level.map
 
-    png = ChunkyPNG::Image.from_file filename
+    png = ChunkyPNG::Image.from_file File.join('levels',filename)
     load_level_meta(level, png)
 
     colors = []
@@ -169,7 +169,11 @@ class Level
       if command.nil? && a > 0
         command = [gosu_color_from_value(png[c,0])]
       elsif command && a == 0
+        begin
         process_command(level, command)
+        rescue
+          puts 'failed to process command'
+        end
         command = nil
       elsif a > 0
         command << gosu_color_from_value(png[c,0])
