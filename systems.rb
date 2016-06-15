@@ -51,12 +51,14 @@ class MonsterSystem
   COLLECT = 'collect.wav'
   WIN_SOUND = 'exit.wav'
   WRONG_COLOR = 'wrong_color.wav'
+  DEATH_SOUND = 'death.wav'
 
   def death_at(entity_manager, x, y, color)
     monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     entity_manager.remove_entity(monster_rec.id)
     # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
 
+    entity_manager.add_entity SoundEffectEvent.new(DEATH_SOUND)
     entity_manager.add_entity Timer.new(:dying, 600, false, DyingEvent)
     
     entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: color, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
