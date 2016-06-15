@@ -1,3 +1,4 @@
+class DyingEvent; end
 class Debug; end
 class BackgroundBlob; end
 class Monster; end
@@ -7,11 +8,13 @@ class BlackHole; end
 class Death; end
 class Particle; end
 class EmitParticlesEvent
-  attr_accessor :color, :target, :intensity
-  def initialize(color:, target:nil, intensity: 25)
+  attr_accessor :color, :target, :intensity, :speed, :size
+  def initialize(color:, target:nil, intensity: 25, speed: nil, size: nil)
     @color = color
     @target = target
     @intensity = intensity
+    @speed = speed
+    @size = size
   end
 end
 class MovableTile

@@ -15,15 +15,18 @@ end
 class ParticlesEmitterSystem
   SPEED = (-3..3).to_a
   POSITIONS = (-15..15).to_a
+  SIZE = (1..3).to_a
   def update(entity_manager, dt, input)
     entity_manager.each_entity(EmitParticlesEvent, Position) do |rec|
       ent_id = rec.id
       evt, pos = rec.components
 
       evt.intensity.times do
-        entity_manager.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
+        speed = evt.speed || SPEED
+        size = evt.size || SIZE
+        new_ent = entity_manager.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
           Particle.new, JoyColor.new(evt.color),
-          Velocity.new(x: SPEED.sample, y: SPEED.sample), Boxed.new(rand(3),rand(3)), EntityTarget.new(evt.target)
+          Velocity.new(x: speed.sample, y: speed.sample), Boxed.new(size.sample,size.sample), EntityTarget.new(evt.target)
       end
 
       # entity_manager.remove_component klass: EmitParticlesEvent, id: ent_id
@@ -49,11 +52,26 @@ class MonsterSystem
   WIN_SOUND = 'exit.wav'
   WRONG_COLOR = 'wrong_color.wav'
 
+  def death_at(entity_manager, x, y)
+    monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
+    entity_manager.remove_entity(monster_rec.id)
+    # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
+
+    entity_manager.add_entity Timer.new(:dying, 600, false, DyingEvent)
+    
+    entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: Gosu::Color::RED, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
+  end
+
   def update(entity_manager, dt, input)
     level = entity_manager.find(Level).first.get(Level)
     map = level.map
 
+    if entity_manager.find(DyingEvent).first
+      level.failed! 
+    end
+
     monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
+    return if monster_rec.nil?
     ent_id = monster_rec.id
     monster, monster_platform, monster_pos, monster_color, boxed, vel = monster_rec.components
 
@@ -62,7 +80,7 @@ class MonsterSystem
     end
 
     if input.down?(Gosu::KbR) || input.pressed?(Gosu::GpButton4) || monster_pos.y > 1100
-      level.failed!
+      death_at(entity_manager, monster_pos.x, monster_pos.y-100)
     end
 
     has_exit_color = has_exit_color?(map, monster_color.color)
@@ -334,7 +352,7 @@ class MonsterSystem
     entity_manager.each_entity(Death, Position, Boxed) do |rec|
       death, pos, death_box = rec.components
 
-      level.failed! if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
+      death_at(entity_manager, monster_pos.x, monster_pos.y) if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
     end
 
     # MovableTilesSystem
@@ -376,7 +394,7 @@ class MonsterSystem
             map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
             map.blocked?(monster_pos.x+w, monster_pos.y+h)
-            level.failed!
+            death_at(entity_manager, monster_pos.x, monster_pos.y)
           end
         end
         tile_pos.x += x_step
@@ -392,7 +410,7 @@ class MonsterSystem
             map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
             map.blocked?(monster_pos.x+w, monster_pos.y+h)
-            level.failed!
+            death_at(entity_manager, monster_pos.x, monster_pos.y)
           end
 
         end
@@ -672,7 +690,8 @@ class RenderSystem
 
   def draw(target, entity_manager)
     # target.scale(0.5, 0.5) do
-    monster_id = entity_manager.find(Monster)[0].id
+    monster = entity_manager.find(Monster).first
+    monster_id = monster ? monster.id : nil
 
     entity_manager.each_entity Position, JoyColor, Boxed do |rec|
       pos, color, boxed = rec.components
