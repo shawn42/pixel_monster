@@ -52,14 +52,14 @@ class MonsterSystem
   WIN_SOUND = 'exit.wav'
   WRONG_COLOR = 'wrong_color.wav'
 
-  def death_at(entity_manager, x, y)
+  def death_at(entity_manager, x, y, color)
     monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     entity_manager.remove_entity(monster_rec.id)
     # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
 
     entity_manager.add_entity Timer.new(:dying, 600, false, DyingEvent)
     
-    entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: Gosu::Color::RED, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
+    entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: color, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
   end
 
   def update(entity_manager, dt, input)
@@ -80,7 +80,7 @@ class MonsterSystem
     end
 
     if input.down?(Gosu::KbR) || input.pressed?(Gosu::GpButton4) || monster_pos.y > 1100
-      death_at(entity_manager, monster_pos.x, monster_pos.y-100)
+      death_at(entity_manager, monster_pos.x, monster_pos.y-100, monster_color.color)
     end
 
     has_exit_color = has_exit_color?(map, monster_color.color)
@@ -352,7 +352,7 @@ class MonsterSystem
     entity_manager.each_entity(Death, Position, Boxed) do |rec|
       death, pos, death_box = rec.components
 
-      death_at(entity_manager, monster_pos.x, monster_pos.y) if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
+      death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color) if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
     end
 
     # MovableTilesSystem
@@ -394,7 +394,7 @@ class MonsterSystem
             map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
             map.blocked?(monster_pos.x+w, monster_pos.y+h)
-            death_at(entity_manager, monster_pos.x, monster_pos.y)
+            death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color)
           end
         end
         tile_pos.x += x_step
@@ -410,7 +410,7 @@ class MonsterSystem
             map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
             map.blocked?(monster_pos.x+w, monster_pos.y+h)
-            death_at(entity_manager, monster_pos.x, monster_pos.y)
+            death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color)
           end
 
         end
