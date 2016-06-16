@@ -81,7 +81,11 @@ class MonsterSystem
       level.complete!
     end
 
-    if input.down?(Gosu::KbR) || input.pressed?(Gosu::GpButton4) || monster_pos.y > 1100
+    if input.down?(Gosu::KbR) || input.pressed?(Gosu::GpButton4) 
+      death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color)
+    end
+
+    if monster_pos.y > 1100
       death_at(entity_manager, monster_pos.x, monster_pos.y-100, monster_color.color)
     end
 
