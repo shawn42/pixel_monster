@@ -56,6 +56,13 @@ class DeathTile < SpecialTile
     end
   end
 end
+class EmptyTile < SpecialTile
+  def self.from_colors(colors)
+    self.new.tap do |t|
+      t.marker_color = colors[1]
+    end
+  end
+end
 
 RELATIVE_DIR_MAP = {
   Vec::UP => {
@@ -208,6 +215,9 @@ class Level
       map.special_tile_defs[tile.marker_color.abgr] = tile
     when Gosu::Color::RED
       tile = DeathTile.from_colors command
+      map.special_tile_defs[tile.marker_color.abgr] = tile
+    when Gosu::Color::GRAY
+      tile = EmptyTile.from_colors command
       map.special_tile_defs[tile.marker_color.abgr] = tile
     else
       puts "unknown command #{command}"

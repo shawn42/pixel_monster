@@ -27,6 +27,8 @@ module Prefab
           eid = death_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
         when RainbowTile
           eid = rainbow_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
+        when EmptyTile
+          eid = tile(entity_manager: entity_manager, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Gosu::Color::GRAY )
         else
           raise "unkown special tile #{special}"
         end
