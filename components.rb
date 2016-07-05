@@ -7,6 +7,7 @@ class Bouncy; end
 class BlackHole; end
 class Death; end
 class Particle; end
+
 class EmitParticlesEvent
   attr_accessor :color, :target, :intensity, :speed, :size
   def initialize(color:, target:nil, intensity: 25, speed: nil, size: nil)
@@ -17,6 +18,16 @@ class EmitParticlesEvent
     @size = size
   end
 end
+
+class ChangeColorEvent; end
+class Rainbow
+  attr_accessor :colors, :color_index
+  def initialize(colors:)
+    @colors = colors
+    @color_index = 0
+  end
+end
+
 class MovableTile
   attr_accessor :path, :vel, :world_target, :dir_vec, :path_target
   def initialize(path:, start_node:, dir_vec:)

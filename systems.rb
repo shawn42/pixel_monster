@@ -565,6 +565,21 @@ class MonsterSystem
   end
 
 end
+
+class RainbowSystem
+  def update(entity_manager, dt, input)
+
+    entity_manager.each_entity(ChangeColorEvent, Rainbow, JoyColor) do |rec|
+      rainbow_id = rec.id
+      evt, rainbow, color = rec.components
+
+      rainbow.color_index = (rainbow.color_index + 1) % rainbow.colors.size
+      color.color = rainbow.colors[rainbow.color_index]
+      entity_manager.remove_component klass: ChangeColorEvent, id: rainbow_id
+    end
+  end
+end
+
 class ParticlesSystem
   def update(entity_manager, dt, input)
     dead_ents = nil

@@ -31,6 +31,17 @@ class BlackHoleTile < SpecialTile
     end
   end
 end
+
+class RainbowTile < SpecialTile
+  attr_accessor :colors
+  def self.from_colors(colors)
+    self.new.tap do |t|
+      t.marker_color = colors[1]
+      t.colors = colors[2..-1]
+    end
+  end
+end
+
 class BouncyTile < SpecialTile
   def self.from_colors(colors)
     self.new.tap do |t|
@@ -171,8 +182,9 @@ class Level
       elsif command && a == 0
         begin
         process_command(level, command)
-        rescue
+        rescue Exception => ex
           puts 'failed to process command'
+          puts ex.inspect
         end
         command = nil
       elsif a > 0
@@ -187,6 +199,9 @@ class Level
     case command[0]
     when Gosu::Color::BLACK
       tile = BlackHoleTile.from_colors command
+      map.special_tile_defs[tile.marker_color.abgr] = tile
+    when Gosu::Color::YELLOW
+      tile = RainbowTile.from_colors command
       map.special_tile_defs[tile.marker_color.abgr] = tile
     when Gosu::Color::BLUE
       tile = BouncyTile.from_colors command

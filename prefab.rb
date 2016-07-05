@@ -22,11 +22,11 @@ module Prefab
           eid = black_hole(entity_manager: entity_manager, tile_def: tile_def,
                       x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
         when BouncyTile
-          # tile(entity_manager: entity_manager,
-          #             x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16, color: Color::GRAY)
           eid = bouncy_tile(entity_manager: entity_manager, tile_def: tile_def, tile_x: c, tile_y: r, color: Color::GRAY)
         when DeathTile
           eid = death_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
+        when RainbowTile
+          eid = rainbow_tile(entity_manager: entity_manager, tile_def: tile_def, x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
         else
           raise "unkown special tile #{special}"
         end
@@ -64,6 +64,11 @@ module Prefab
   def self.color_source(entity_manager:,x:,y:,color:)
       # TODO add border on Boxed?
       entity_manager.add_entity ColorSource.new, JoyColor.new(color), Position.new(x, y), Boxed.new(16,16)
+  end
+
+  RAINBOW_CHANGE_TIME_MS = 500
+  def self.rainbow_tile(entity_manager:,tile_def:,x:,y:)
+    entity_manager.add_entity Rainbow.new(colors: tile_def.colors), Position.new(x,y), Boxed.new(16,16), JoyColor.new(tile_def.colors.first), ColorSource.new, Timer.new("colorchange", RAINBOW_CHANGE_TIME_MS, true, ChangeColorEvent)
   end
 
   def self.black_hole(entity_manager:,tile_def:,x:,y:)
