@@ -55,6 +55,7 @@ class MonsterSystem
 
   def death_at(entity_manager, x, y, color)
     monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
+    return if monster_rec.nil? # already dead this frame
     entity_manager.remove_entity(monster_rec.id)
     # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
 
@@ -744,6 +745,7 @@ class RenderSystem
       target.draw_quad(x+40, y, b, x+40, y-h, b, x+60, y-h, b, x+60, y, b, 3)
     end
 
+    # TODO record one and use everywhere
     entity_manager.each_entity(Position, Boxed, Death) do |rec|
       pos, death_box, death = rec.components
 
