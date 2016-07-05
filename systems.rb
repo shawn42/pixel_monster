@@ -745,29 +745,38 @@ class RenderSystem
       target.draw_quad(x+40, y, b, x+40, y-h, b, x+60, y-h, b, x+60, y, b, 3)
     end
 
-    # TODO record one and use everywhere
-    entity_manager.each_entity(Position, Boxed, Death) do |rec|
-      pos, death_box, death = rec.components
-
-      x = pos.x
-      y = pos.y
+    death_box_recs = entity_manager.find(Position, Boxed, Death)
+    if death_box_recs[0]
+      # all death boxes are the same size..
+      pos, death_box, death = death_box_recs[0].components
       w = death_box.width
       h = death_box.height
-      n = 50
+      x = 0
+      y = 0
 
-      n.times do
-        rx = rand(x-w-4..x+w)
-        ry = rand(y-h-4..y+h)
-        rw = rand(2..5)
-        rh = rand(2..5)
-        rc = Gosu::Color.rgba(rand(200)+50,rand(200)+50,rand(200)+50,rand(35)+220)
+      glitch_img = target.record(32,32) do
+        n = 50
+
+        n.times do
+          rx = rand(x-w-4..x+w)
+          ry = rand(y-h-4..y+h)
+          rw = rand(2..5)
+          rh = rand(2..5)
+          rc = Gosu::Color.rgba(rand(200)+50,rand(200)+50,rand(200)+50,rand(35)+220)
+          z = 1
+          target.draw_quad(rx, ry, rc, rx+rw, ry, rc, rx+rw, ry+rh, rc, rx, ry+rh, rc, z)
+        end
+      end
+
+      entity_manager.each_entity(Position, Boxed, Death) do |rec|
+        pos, death_box, death = rec.components
+
+        x = pos.x
+        y = pos.y
         z = 4
-
-        target.draw_quad(rx, ry, rc, rx+rw, ry, rc, rx+rw, ry+rh, rc, rx, ry+rh, rc, z)
+        glitch_img.draw x, y, z
       end
     end
-
-    # end
 
   end
 end
