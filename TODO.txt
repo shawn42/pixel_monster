@@ -3,14 +3,13 @@ BUGS
  - clean up duplicate code for color source consumption
 
 additional music, can be dynamically generated?!!
-rainbow pixels (change color, encode in header bits)
-add magic pixel (sets you to target color)
 add level timer
 add timer high scores
 
 
 add border property to color / boxed?
 coop mode?
+power ups? 
 
 make particle system an entity instead of each particle
 

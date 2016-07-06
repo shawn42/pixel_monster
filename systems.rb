@@ -65,6 +65,18 @@ class MonsterSystem
     entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: color, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
   end
 
+  def clamp(val, range)
+    if range.cover? val
+      val
+    else
+      if val < range.begin
+        range.begin 
+      else
+        range.end 
+      end
+    end
+  end
+
   def update(entity_manager, dt, input)
     level = entity_manager.find(Level).first.get(Level)
     map = level.map
@@ -323,6 +335,31 @@ class MonsterSystem
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
         Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+      end
+    end
+
+    entity_manager.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border) do |rec|
+      src_id = rec.id
+      src, pos, source_color, box, border = rec.components
+      sc = source_color.color
+
+      x_off = pos.x - monster_pos.x
+      y_off = pos.y - monster_pos.y
+      dist = x_off*x_off+y_off*y_off
+
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+        monster_color.color = sc
+
+        dead_ents ||= []
+        dead_ents << src_id
+
+        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+        Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+      else
+        change = (-2..2).to_a.sample
+        border.width = clamp(border.width + change, 14..18)
+        border.height = clamp(border.height + change, 14..18)
       end
     end
 
@@ -738,6 +775,21 @@ class RenderSystem
       target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, pos.z)
     end
 
+    entity_manager.each_entity Position, JoyColor, Border do |rec|
+      pos, color, border = rec.components
+      c1 = c2 = c3 = c4 = color.color
+      x1 = pos.x - border.width
+      y1 = pos.y - border.height
+      x2 = pos.x + border.width
+      y2 = y1
+      x3 = x2
+      y3 = pos.y + border.height
+      x4 = x1
+      y4 = y3
+
+      target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, pos.z)
+    end
+
     # EEWWW
     rec = entity_manager.find(Monster, Position, JoyColor, Debug).first
     if rec
@@ -847,6 +899,7 @@ class ColorMix
     ColorMix.to_rgba(color)
   end
 end
+
 def pretty_color(c)
   "[#{c.red},#{c.green},#{c.blue}]"
 end

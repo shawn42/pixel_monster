@@ -3,6 +3,7 @@ class Debug; end
 class BackgroundBlob; end
 class Monster; end
 class ColorSource; end
+class SuperColorSource; end
 class Bouncy; end
 class BlackHole; end
 class Death; end
@@ -100,6 +101,14 @@ class Boxed
     @squish_height = 0
     @squish_amount = 0
     @squish_dir = 0
+  end
+end
+
+class Border
+  attr_accessor :width, :height
+  def initialize(width,height)
+    @width = width
+    @height = height
   end
 end
 

@@ -32,6 +32,16 @@ class BlackHoleTile < SpecialTile
   end
 end
 
+class BrightTile < SpecialTile
+  attr_accessor :color
+  def self.from_colors(colors)
+    self.new.tap do |t|
+      t.marker_color = colors[1]
+      t.color = colors[2]
+    end
+  end
+end
+
 class RainbowTile < SpecialTile
   attr_accessor :colors
   def self.from_colors(colors)
@@ -200,29 +210,25 @@ class Level
     end
   end
 
+  COLOR_TO_TILE_KLASS = {
+    Gosu::Color::BLACK => BlackHoleTile,
+    Gosu::Color::YELLOW => RainbowTile,
+    Gosu::Color::GREEN => BrightTile,
+    Gosu::Color::BLUE => BouncyTile,
+    Gosu::Color::RED => DeathTile,
+    Gosu::Color::GRAY => EmptyTile,
+  }
+
   def self.process_command(level, command)
     map = level.map
 
-    case command[0]
-    when Gosu::Color::BLACK
-      tile = BlackHoleTile.from_colors command
-      map.special_tile_defs[tile.marker_color.abgr] = tile
-    when Gosu::Color::YELLOW
-      tile = RainbowTile.from_colors command
-      map.special_tile_defs[tile.marker_color.abgr] = tile
-    when Gosu::Color::BLUE
-      tile = BouncyTile.from_colors command
-      map.special_tile_defs[tile.marker_color.abgr] = tile
-    when Gosu::Color::RED
-      tile = DeathTile.from_colors command
-      map.special_tile_defs[tile.marker_color.abgr] = tile
-    when Gosu::Color::GRAY
-      tile = EmptyTile.from_colors command
+    klass = COLOR_TO_TILE_KLASS[command[0]]
+    if klass
+      tile = klass.from_colors command
       map.special_tile_defs[tile.marker_color.abgr] = tile
     else
       puts "unknown command #{command}"
     end
-
   end
 
   def self.gosu_color_from_value(v)

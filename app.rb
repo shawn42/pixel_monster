@@ -2,6 +2,7 @@ require 'gosu'
 require 'awesome_print'
 # require 'pry'
 
+require_relative 'gosu_ext'
 require_relative 'vec'
 require_relative 'components'
 require_relative 'prefab'
