@@ -7,6 +7,7 @@ require_relative 'vec'
 require_relative 'components'
 require_relative 'prefab'
 require_relative 'systems'
+require_relative 'world'
 require_relative 'entity_manager'
 require_relative 'input_cacher'
 require_relative 'level'
@@ -16,14 +17,13 @@ class PixelMonster < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
   def initialize
     super(1024,1024,false)
-
-    @entity_manager = EntityManager.new
-    @input_cacher = InputCacher.new
     @level_number = (ARGV[0] || 1).to_i - 1
     @num_levels = Dir['./levels/level*.png'].size
     @music = Gosu::Song.new 'music.wav'
+    @input_cacher = InputCacher.new
+    build_world
+
     next_level
-    build_systems
   end
 
   def needs_cursor?
@@ -43,30 +43,30 @@ class PixelMonster < Gosu::Window
 
   def reset_level
     @level = Level.load(@filename)
+    @world.reset! if @world
     @level.reset! if @level
-    @entity_manager = EntityManager.new
-    Prefab.level entity_manager: @entity_manager, level: @level
+    Prefab.level entity_manager: @world.entity_manager, level: @level
   end
 
-  def build_systems
-    @input_mapping_system = InputMappingSystem.new
-    @monster_system = MonsterSystem.new
-    @rainbow_system = RainbowSystem.new
-
-    @timer_system = TimerSystem.new
-
-    @sound_system = SoundSystem.new
-
-    @particles_emitter_system = ParticlesEmitterSystem.new
-    @particles_system = ParticlesSystem.new
-    @background_system = BackgroundSystem.new
+  def build_world
+    entity_manager = EntityManager.new
+    @world = World.new entity_manager, [
+      InputMappingSystem.new,
+      MonsterSystem.new,
+      RainbowSystem.new,
+      TimerSystem.new,
+      SoundSystem.new,
+      ParticlesEmitterSystem.new,
+      ParticlesSystem.new,
+      BackgroundSystem.new
+    ]
     @render_system = RenderSystem.new
   end
 
   def update
     next_level if @level.complete?
     reset_level if @level.failed?
-    self.caption = "FPS: #{Gosu.fps} ENTS: #{@entity_manager.num_entities}"
+    self.caption = "FPS: #{Gosu.fps} ENTS: #{@world.entity_manager.num_entities}"
 
     total_millis = Gosu::milliseconds.to_f
 
@@ -80,30 +80,19 @@ class PixelMonster < Gosu::Window
       input_snapshot = @input_cacher.snapshot @last_snapshot, total_millis, mouse_pos
       @last_snapshot = input_snapshot
 
-      @input_mapping_system.update @entity_manager, delta, input_snapshot
-
-      @monster_system.update @entity_manager, delta, input_snapshot
-      @rainbow_system.update @entity_manager, delta, input_snapshot
-
-      @timer_system.update @entity_manager, delta, input_snapshot
-
-      @sound_system.update @entity_manager, delta, input_snapshot
-
-      @particles_emitter_system.update @entity_manager, delta, input_snapshot
-      @particles_system.update @entity_manager, delta, input_snapshot
-      @background_system.update @entity_manager, delta, input_snapshot
+      @world.update delta, input_snapshot
     end
 
     @last_millis = total_millis
   end
 
   def draw
-    @render_system.draw self, @entity_manager
+    @render_system.draw self, @world.entity_manager
   end
 
   def button_down(id)
     if id == Gosu::KbP
-      ap @entity_manager
+      ap @world.entity_manager
     end
     @input_cacher.button_down id
   end

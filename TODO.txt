@@ -1,13 +1,9 @@
-BUGS
- - riding on bouncy tile does not always let you super bounce
- - clean up duplicate code for color source consumption
-
-additional music, can be dynamically generated?!!
 add level timer
+additional music, can be dynamically generated?!!
 add timer high scores
+allow larger than 32x32 maps
+allow continuation of command blocks (last block binary for "next line"?)
 
-
-add border property to color / boxed?
 coop mode?
 power ups? 
 
@@ -26,4 +22,9 @@ builds
   windows
   mac
   linux?
+
+
+BUGS
+ - riding on bouncy tile does not always let you super bounce
+ - clean up duplicate code for color source consumption
 

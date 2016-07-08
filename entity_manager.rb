@@ -1,6 +1,10 @@
 class EntityManager
   attr_reader :num_entities
   def initialize
+    clear!
+  end
+
+  def clear!
     @comp_to_id = Hash.new {|h, k| h[k] = []}
     @id_to_comp = Hash.new {|h, k| h[k] = {}}
     @cache = {}
@@ -91,24 +95,6 @@ class EntityManager
         results.delete_if{|res| id == res.id}
       end
     end
-
-#     ent_record = @id_to_comp.delete(id)
-#
-#     if ent_record
-#       # NOTE could miss the dropping of entity if all components are individually removed
-#       @num_entities -= 1
-#       klasses = ent_record.keys
-#
-#       klasses.each do |klass|
-#         @comp_to_id[klass].delete id
-#       end
-#
-#       @cache.each do |comp_klasses, results|
-#         unless (comp_klasses & klasses).empty?
-#           results.delete_if{|res| res.id == id}
-#         end
-#       end
-#     end
   end
 
   def add_entity(*components)
