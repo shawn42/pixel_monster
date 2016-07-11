@@ -97,8 +97,10 @@ module Prefab
   end
 
   def self.monster(entity_manager:,x:,y:,color:)
+    entity_manager.add_entity LevelTimer.new, Timed.new, Label.new(size: 30), Position.new(500, 40, 99)
     entity_manager.add_entity Monster.new, JoyColor.new(color), Boxed.new(14, 14),
       Position.new(x, y), Velocity.new, PlatformPosition.new, Debug.new
+
   end
 
 end

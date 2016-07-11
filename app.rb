@@ -11,6 +11,7 @@ require_relative 'world'
 require_relative 'entity_manager'
 require_relative 'input_cacher'
 require_relative 'level'
+require_relative 'scoreboard'
 
 
 class PixelMonster < Gosu::Window
@@ -21,6 +22,7 @@ class PixelMonster < Gosu::Window
     @num_levels = Dir['./levels/level*.png'].size
     @music = Gosu::Song.new 'music.wav'
     @input_cacher = InputCacher.new
+    @scoreboard = Scoreboard.new
     build_world
 
     next_level
@@ -42,7 +44,9 @@ class PixelMonster < Gosu::Window
   end
 
   def reset_level
-    @level = Level.load(@filename)
+    @level = Level.load(file_name: @filename, 
+                        number: @level_number, 
+                        high_scores: @scoreboard)
     @world.reset! if @world
     @level.reset! if @level
     Prefab.level entity_manager: @world.entity_manager, level: @level
@@ -55,6 +59,8 @@ class PixelMonster < Gosu::Window
       MonsterSystem.new,
       RainbowSystem.new,
       TimerSystem.new,
+      TimedSystem.new,
+      TimedLevelSystem.new,
       SoundSystem.new,
       ParticlesEmitterSystem.new,
       ParticlesSystem.new,
@@ -64,7 +70,10 @@ class PixelMonster < Gosu::Window
   end
 
   def update
-    next_level if @level.complete?
+    if @level.complete?
+      update_scoreboard!(@level)
+      next_level 
+    end
     reset_level if @level.failed?
     self.caption = "FPS: #{Gosu.fps} ENTS: #{@world.entity_manager.num_entities}"
 
@@ -99,6 +108,10 @@ class PixelMonster < Gosu::Window
 
   def button_up(id)
     @input_cacher.button_up id
+  end
+
+  def update_scoreboard!(level)
+    @scoreboard.completed_level level: level, number: @level_number
   end
 end
 

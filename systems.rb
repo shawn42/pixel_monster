@@ -35,6 +35,13 @@ class ParticlesEmitterSystem
   end
 end
 
+class TimedLevelSystem
+  def update(entity_manager, dt, input)
+   timed, label, lt  = entity_manager.find(Timed, Label, LevelTimer).first.components
+   label.text = (timed.accumulated_time_in_ms/1000).round(1)
+  end
+end
+
 class MonsterSystem
   JUMP_FORGIVENESS = 100 #ms
   RUN_FORGIVENESS = 20 #ms
@@ -53,30 +60,6 @@ class MonsterSystem
   WRONG_COLOR = 'wrong_color.wav'
   DEATH_SOUND = 'death.wav'
 
-  def death_at(entity_manager, x, y, color)
-    monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
-    return if monster_rec.nil? # already dead this frame
-    entity_manager.remove_entity(monster_rec.id)
-    # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
-
-    entity_manager.add_entity SoundEffectEvent.new(DEATH_SOUND)
-    entity_manager.add_entity Timer.new(:dying, 600, false, DyingEvent)
-    
-    entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: color, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
-  end
-
-  def clamp(val, range)
-    if range.cover? val
-      val
-    else
-      if val < range.begin
-        range.begin 
-      else
-        range.end 
-      end
-    end
-  end
-
   def update(entity_manager, dt, input)
     level = entity_manager.find(Level).first.get(Level)
     map = level.map
@@ -91,7 +74,7 @@ class MonsterSystem
     monster, monster_platform, monster_pos, monster_color, boxed, vel = monster_rec.components
 
     if input.pressed?(Gosu::KbTab) || input.pressed?(Gosu::GpButton5)
-      level.complete!
+      level.skip!
     end
 
     if input.down?(Gosu::KbR) || input.pressed?(Gosu::GpButton4) 
@@ -124,7 +107,8 @@ class MonsterSystem
     if in_exit?(map, monster_pos, boxed)
       if has_exit_color
         entity_manager.add_entity SoundEffectEvent.new(WIN_SOUND)
-        level.complete!
+        timed = entity_manager.find(Timed, LevelTimer).first.get(Timed)
+        level.complete!(ms_to_complete: timed.accumulated_time_in_ms)
       else
         # entity_manager.add_entity SoundEffectEvent.new(WRONG_COLOR)
       end
@@ -471,6 +455,32 @@ class MonsterSystem
     end
   end
 
+  private
+  def death_at(entity_manager, x, y, color)
+    monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
+    return if monster_rec.nil? # already dead this frame
+    entity_manager.remove_entity(monster_rec.id)
+    # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
+
+    entity_manager.add_entity SoundEffectEvent.new(DEATH_SOUND)
+    entity_manager.add_entity Timer.new(:dying, 600, false, DyingEvent)
+    
+    entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: color, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
+  end
+
+  def clamp(val, range)
+    if range.cover? val
+      val
+    else
+      if val < range.begin
+        range.begin 
+      else
+        range.end 
+      end
+    end
+  end
+
+
   def in_moving_tile?(moveable_tiles, x, y, w, h)
     moveable_tiles.any? do |rec|
       tile, tile_pos, tile_box = rec.components
@@ -653,6 +663,15 @@ class ParticlesSystem
 
   end
 end
+class TimedSystem
+  def update(entity_manager, delta, input)
+    entity_manager.each_entity Timed do |rec|
+      timed = rec.get(Timed)
+      ent_id = rec.id
+      timed.accumulated_time_in_ms += delta
+    end
+  end
+end
 
 class TimerSystem
   def update(entity_manager, delta, input)
@@ -747,8 +766,26 @@ end
 
 class RenderSystem
 
+  def initialize
+    @font_cache = {}
+  end
+
+  def get_cached_font(font:,size:)
+    @font_cache[font] ||= {}
+    opts = {}
+    opts[:name] if font if font
+    @font_cache[font][size] ||= Gosu::Font.new size, opts
+  end
+
   def draw(target, entity_manager)
     # target.scale(0.5, 0.5) do
+
+    entity_manager.each_entity Label, Position do |rec|
+      label, pos = rec.components
+      font = get_cached_font font: label.font, size: label.size
+      font.draw(label.text, pos.x, pos.y, pos.z)
+    end
+
     monster = entity_manager.find(Monster).first
     monster_id = monster ? monster.id : nil
 

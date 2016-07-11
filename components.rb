@@ -120,6 +120,24 @@ class JoyImage
   end
 end
 
+class LevelTimer; end
+class Timed
+  attr_accessor :accumulated_time_in_ms
+
+  def initialize
+    @accumulated_time_in_ms = 0
+  end
+end
+
+class Label
+  attr_accessor :text, :size, :font
+  def initialize(size:,text:"",font:nil)
+    @size = size
+    @font = font
+    @text = text
+  end
+end
+
 class Timer
   attr_accessor :ttl, :repeat, :total, :event, :name, :expires_at
   def initialize(name, ttl, repeat, event = nil)

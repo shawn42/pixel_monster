@@ -107,12 +107,12 @@ class Level
   START_COLOR = Gosu::Color::WHITE
   EXIT_COLOR = Gosu::Color::BLACK
   MAX_ALPHA = 255
-  attr_accessor :map, :complete
-  def self.load(filename)
+  attr_accessor :map, :complete, :last_ms_to_complete, :best_ms_to_complete
+  def self.load(file_name:, number:, high_scores: )
     level = Level.new
     map = level.map
 
-    png = ChunkyPNG::Image.from_file File.join('levels',filename)
+    png = ChunkyPNG::Image.from_file File.join('levels',file_name)
     load_level_meta(level, png)
 
     colors = []
@@ -243,7 +243,12 @@ class Level
     @map ||= Map.new
   end
 
-  def complete!
+  def complete!(ms_to_complete:)
+    @last_ms_to_complete = ms_to_complete
+    @complete = true
+  end
+
+  def skip!
     @complete = true
   end
 
