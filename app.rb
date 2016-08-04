@@ -20,7 +20,7 @@ class PixelMonster < Gosu::Window
     super(1024,1024,false)
     @level_number = (ARGV[0] || 1).to_i - 1
     @num_levels = Dir['./levels/level*.png'].size
-    @music = Gosu::Song.new 'music.wav'
+    @music_files = Dir['./music/*.mp3']
     @input_cacher = InputCacher.new
     @scoreboard = Scoreboard.new
     build_world
@@ -33,14 +33,42 @@ class PixelMonster < Gosu::Window
   end
 
   def next_level
-    @music.stop
-    @music.play true
+    @music.stop if @music
     @level_number = @level_number += 1
 
     @level_number = 1 if @level_number > @num_levels
 
     @filename = "level#{@level_number}.png"
     reset_level
+
+    avg_rgb = @level.map.average_color
+    hue = calc_hue(rgb: avg_rgb)
+    index = hue * @music_files.size / 360
+    file_name = @music_files[index.floor]
+    @music = Gosu::Song.new file_name
+    @music.volume = 0.3
+    @music.play true
+  end
+
+  def calc_hue(rgb:)
+    g = rgb.green / 255.0
+    r = rgb.red / 255.0
+    b = rgb.blue / 255.0
+    cmax = [r,g,b].max
+    cmin = [r,g,b].min
+    delta = cmax-cmin
+
+    hue = if cmax == r
+        (g-b)
+      elsif cmax == g
+        2 + (b-r)
+      else
+        4 + (r-g)
+      end
+    hue /= delta
+    hue *= 60
+    hue %= 360
+    hue
   end
 
   def reset_level

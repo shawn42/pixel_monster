@@ -58,6 +58,10 @@ module Prefab
     monster(entity_manager: entity_manager, color: Color::BLACK,
             x: map.player_x * TILE_WIDTH+16,
             y: map.player_y * TILE_WIDTH+16)
+
+    entity_manager.add_entity LevelTimer.new, Timed.new, Label.new(size: 35), Position.new(500, 40, 99)
+
+    entity_manager.add_entity Label.new(size: 14, text: 40.4), Position.new(510, 80, 99)
   end
 
   def self.monster_exit(entity_manager:,x:,y:,color:)
@@ -97,7 +101,7 @@ module Prefab
   end
 
   def self.monster(entity_manager:,x:,y:,color:)
-    entity_manager.add_entity LevelTimer.new, Timed.new, Label.new(size: 30), Position.new(500, 40, 99)
+
     entity_manager.add_entity Monster.new, JoyColor.new(color), Boxed.new(14, 14),
       Position.new(x, y), Velocity.new, PlatformPosition.new, Debug.new
 
