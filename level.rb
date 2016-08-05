@@ -111,6 +111,7 @@ class Level
   def self.load(file_name:, number:, high_scores: )
     level = Level.new
     map = level.map
+    level.best_ms_to_complete = high_scores.best(number: number) || "?"
 
     png = ChunkyPNG::Image.from_file File.join('levels',file_name)
     load_level_meta(level, png)

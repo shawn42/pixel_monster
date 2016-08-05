@@ -61,7 +61,8 @@ module Prefab
 
     entity_manager.add_entity LevelTimer.new, Timed.new, Label.new(size: 35), Position.new(500, 40, 99)
 
-    entity_manager.add_entity Label.new(size: 14, text: 40.4), Position.new(510, 80, 99)
+    best = (level.best_ms_to_complete/1000).round(1)
+    entity_manager.add_entity Label.new(size: 16, text: "(#{best})"), Position.new(510, 80, 99)
   end
 
   def self.monster_exit(entity_manager:,x:,y:,color:)

@@ -21,6 +21,10 @@ class Scoreboard
     end
   end
 
+  def best(number:)
+    @scores[number]
+  end
+
   def completed_level(level:,  number:)
     new_time = level.last_ms_to_complete
     return unless new_time
