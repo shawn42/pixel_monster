@@ -768,6 +768,7 @@ class RenderSystem
 
   def initialize
     @font_cache = {}
+    @color_cache = {}
   end
 
   def get_cached_font(font:,size:)
@@ -776,6 +777,14 @@ class RenderSystem
     opts[:name] if font if font
     @font_cache[font][size] ||= Gosu::Font.new size, opts
   end
+
+  def fade(color, percent:)
+    @color_cache[color] ||= {}
+    c = Gosu::Color.rgba(color.red, color.green, color.blue, 
+                         (color.alpha * percent / 100.0).round)
+    @color_cache[color][percent] ||= c
+  end
+
 
   def draw(target, entity_manager)
     # target.scale(0.5, 0.5) do
@@ -836,17 +845,33 @@ class RenderSystem
       y = 1024
       full_h = 60
 
+      level = entity_manager.find(Level).first.get(Level)
+      exit_color = level.map.exit_color
+
       r = Gosu::Color::RED
       g = Gosu::Color::GREEN
       b = Gosu::Color::BLUE
+      rr = fade(r, percent: 50)
+      gg = fade(g, percent: 50)
+      bb = fade(b, percent: 50)
+
+      h = (exit_color.red / 255.0 * full_h + 1).round
+      target.draw_quad(x, y, rr, x, y-h, rr, x+20, y-h, rr, x+20, y, rr, 3)
+
       h = (c.red / 255.0 * full_h).round
-      target.draw_quad(x, y, r, x, y-h, r, x+20, y-h, r, x+20, y, r, 3)
+      target.draw_quad(x+5, y, r, x+5, y-h, r, x+15, y-h, r, x+15, y, r, 3)
+
+      h = (exit_color.green / 255.0 * full_h + 1).round
+      target.draw_quad(x+25, y, gg, x+25, y-h, gg, x+45, y-h, gg, x+45, y, gg, 3)
 
       h = (c.green / 255.0 * full_h).round
-      target.draw_quad(x+20, y, g, x+20, y-h, g, x+40, y-h, g, x+40, y, g, 3)
+      target.draw_quad(x+30, y, g, x+30, y-h, g, x+40, y-h, g, x+40, y, g, 3)
+
+      h = (exit_color.blue / 255.0 * full_h + 1).round
+      target.draw_quad(x+50, y, bb, x+50, y-h, bb, x+70, y-h, bb, x+70, y, bb, 3)
 
       h = (c.blue / 255.0 * full_h).round
-      target.draw_quad(x+40, y, b, x+40, y-h, b, x+60, y-h, b, x+60, y, b, 3)
+      target.draw_quad(x+55, y, b, x+55, y-h, b, x+65, y-h, b, x+65, y, b, 3)
     end
 
     death_box_recs = entity_manager.find(Position, Boxed, Death)
