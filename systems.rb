@@ -862,16 +862,16 @@ class RenderSystem
       target.draw_quad(x+5, y, r, x+5, y-h, r, x+15, y-h, r, x+15, y, r, 3)
 
       h = (exit_color.green / 255.0 * full_h + 1).round
-      target.draw_quad(x+25, y, gg, x+25, y-h, gg, x+45, y-h, gg, x+45, y, gg, 3)
+      target.draw_quad(x+20, y, gg, x+20, y-h, gg, x+40, y-h, gg, x+40, y, gg, 3)
 
       h = (c.green / 255.0 * full_h).round
-      target.draw_quad(x+30, y, g, x+30, y-h, g, x+40, y-h, g, x+40, y, g, 3)
+      target.draw_quad(x+25, y, g, x+25, y-h, g, x+35, y-h, g, x+35, y, g, 3)
 
       h = (exit_color.blue / 255.0 * full_h + 1).round
-      target.draw_quad(x+50, y, bb, x+50, y-h, bb, x+70, y-h, bb, x+70, y, bb, 3)
+      target.draw_quad(x+40, y, bb, x+40, y-h, bb, x+60, y-h, bb, x+60, y, bb, 3)
 
       h = (c.blue / 255.0 * full_h).round
-      target.draw_quad(x+55, y, b, x+55, y-h, b, x+65, y-h, b, x+65, y, b, 3)
+      target.draw_quad(x+45, y, b, x+45, y-h, b, x+55, y-h, b, x+55, y, b, 3)
     end
 
     death_box_recs = entity_manager.find(Position, Boxed, Death)

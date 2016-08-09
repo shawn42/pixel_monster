@@ -61,7 +61,8 @@ module Prefab
 
     entity_manager.add_entity LevelTimer.new, Timed.new, Label.new(size: 35), Position.new(500, 40, 99)
 
-    best = (level.best_ms_to_complete/1000).round(1)
+    best_ms = level.best_ms_to_complete
+    best = best_ms ? (best_ms/1000).round(1) : "?"
     entity_manager.add_entity Label.new(size: 16, text: "(#{best})"), Position.new(510, 80, 99)
   end
 
