@@ -148,10 +148,14 @@ class Level
       end
     end
 
-    avg_red = colors.collect(&:red).sum / colors.size.to_f
-    avg_green = colors.collect(&:green).sum / colors.size.to_f
-    avg_blue = colors.collect(&:blue).sum / colors.size.to_f
-    map.average_color = Gosu::Color.rgba(avg_red, avg_green, avg_blue, 255)
+    if colors.size > 0
+      avg_red = colors.collect(&:red).sum / colors.size.to_f
+      avg_green = colors.collect(&:green).sum / colors.size.to_f
+      avg_blue = colors.collect(&:blue).sum / colors.size.to_f
+      map.average_color = Gosu::Color.rgba(avg_red, avg_green, avg_blue, 255)
+    else
+      map.average_color = map.exit_color
+    end
 
     level
   end
