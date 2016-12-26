@@ -78,12 +78,15 @@ class PixelMonster < Gosu::Window
     @world.reset! if @world
     @level.reset! if @level
     Prefab.level entity_manager: @world.entity_manager, level: @level
+    Prefab.camera entity_manager: @world.entity_manager, scale: 1, x: 512, y: 512
   end
 
   def build_world
     entity_manager = EntityManager.new
+
     @world = World.new entity_manager, [
       InputMappingSystem.new,
+      CameraSystem.new,
       MonsterSystem.new,
       RainbowSystem.new,
       TimerSystem.new,
@@ -130,6 +133,10 @@ class PixelMonster < Gosu::Window
   def button_down(id)
     if id == Gosu::KbP
       ap @world.entity_manager
+    elsif id == Gosu::KbO
+      @world.entity_manager.add_entity(ZoomCameraOperation.new(scale: 3, target_x: 450, target_y: 100, duration: 400))
+    elsif id == Gosu::KbI
+      @world.entity_manager.add_entity(ZoomCameraOperation.new(scale: 0, target_x: 450, target_y: 100, duration: 300))
     end
     @input_cacher.button_down id
   end

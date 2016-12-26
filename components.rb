@@ -64,6 +64,28 @@ class PlatformPosition
   end
 end
 
+class Camera
+  attr_accessor :x, :y, :scale, :target_x, :target_y
+  def initialize(x:,y:,scale:1)
+    @x = x
+    @y = y
+    @target_x = @x
+    @target_y = @y
+    @scale = scale
+  end
+end
+class ZoomCameraOperation
+  attr_accessor :scale, :duration, :ttl, :target_scale, :target_x, :target_y
+  def initialize(scale:, duration:, target_x:, target_y:)
+    @scale = 0
+    @duration = duration
+    @ttl = duration
+    @target_scale = scale
+    @target_x = target_x
+    @target_y = target_y
+  end
+end
+
 class Position
   attr_accessor :x, :y, :z
   def initialize(x,y,z=2)

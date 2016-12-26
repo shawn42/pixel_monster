@@ -27,4 +27,3 @@ builds
 BUGS
  - riding on bouncy tile does not always let you super bounce
  - clean up duplicate code for color source consumption
-

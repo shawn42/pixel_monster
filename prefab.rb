@@ -3,6 +3,10 @@ module Prefab
   COLORS = [Color::AQUA,Color::BLUE,Color::CYAN,Color::FUCHSIA,Color::GRAY,Color::GREEN,Color::RED,Color::WHITE,Color::YELLOW]
 
   TILE_WIDTH = 32
+  def self.camera(entity_manager:, x:, y:, scale:)
+    entity_manager.add_entity Camera.new(scale: scale, x: x, y: y)
+  end
+
   def self.level(entity_manager:,level:)
     # XXX there's gotta be a better way to do this
     entity_manager.add_entity level

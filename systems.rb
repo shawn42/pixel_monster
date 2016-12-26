@@ -12,6 +12,25 @@ module Enumerable
   end
 end
 
+class CameraSystem
+  def update(entity_manager, dt, input)
+    camera = entity_manager.find(Camera).first.components.first
+
+    entity_manager.each_entity(ZoomCameraOperation) do |rec|
+      op = rec.components.first
+      op.ttl -= dt
+      if op.ttl <= 0
+        op.ttl = 0
+        entity_manager.remove_entity id: rec.id
+      end
+      camera.scale = 1 + op.target_scale * (op.duration-op.ttl)/op.duration.to_f
+      camera.target_x = op.target_x
+      camera.target_y = op.target_y
+    end
+
+  end
+end
+
 class ParticlesEmitterSystem
   SPEED = (-3..3).to_a
   POSITIONS = (-15..15).to_a
@@ -30,7 +49,7 @@ class ParticlesEmitterSystem
       end
 
       # entity_manager.remove_component klass: EmitParticlesEvent, id: ent_id
-      entity_manager.remove_entity ent_id
+      entity_manager.remove_entity id: ent_id
     end
   end
 end
@@ -266,8 +285,6 @@ class MonsterSystem
 
 
     # ColorStuffSystem
-    dead_ents = nil
-
     entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed, MovableTile) do |rec|
       src_id = rec.id
       src, pos, source_color, box, movable = rec.components
@@ -281,8 +298,7 @@ class MonsterSystem
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
 
-        dead_ents ||= []
-        dead_ents << src_id
+        entity_manager.remove_entity id: src_id
 
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
@@ -292,13 +308,6 @@ class MonsterSystem
         entity_manager.add_component( id:eid, component: movable )
       end
     end
-    if dead_ents
-      dead_ents.each do |dead_id|
-        entity_manager.remove_entity dead_id
-      end
-      dead_ents = []
-    end
-
 
     entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed) do |rec|
       src_id = rec.id
@@ -313,8 +322,7 @@ class MonsterSystem
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
 
-        dead_ents ||= []
-        dead_ents << src_id
+        entity_manager.remove_entity id: src_id
 
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
@@ -334,8 +342,7 @@ class MonsterSystem
       if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
         monster_color.color = sc
 
-        dead_ents ||= []
-        dead_ents << src_id
+        entity_manager.remove_entity id: src_id
 
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
@@ -446,20 +453,13 @@ class MonsterSystem
       end
 
     end
-
-
-    if dead_ents
-      dead_ents.each do |dead_id|
-        entity_manager.remove_entity dead_id
-      end
-    end
   end
 
   private
   def death_at(entity_manager, x, y, color)
     monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     return if monster_rec.nil? # already dead this frame
-    entity_manager.remove_entity(monster_rec.id)
+    entity_manager.remove_entity id: monster_rec.id
     # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
 
     entity_manager.add_entity SoundEffectEvent.new(DEATH_SOUND)
@@ -629,7 +629,6 @@ end
 
 class ParticlesSystem
   def update(entity_manager, dt, input)
-    dead_ents = nil
     entity_manager.each_entity(Velocity, Particle, Position, JoyColor, EntityTarget) do |rec|
       ent_id = rec.id
       vel, particle, pos, color, ent_target = rec.components
@@ -654,12 +653,9 @@ class ParticlesSystem
       c = color.color
       color.color = Gosu::Color.rgba(c.red,c.green,c.blue,c.alpha-20*scalar)
       if color.color.alpha <= 0
-        dead_ents ||= []
-        dead_ents << ent_id
+        entity_manager.remove_entity id: ent_id
       end
     end
-
-    entity_manager.remove_entites dead_ents if dead_ents
 
   end
 end
@@ -758,7 +754,7 @@ class BackgroundSystem
       pos.y += vel.y * scalar
 
       if pos.x < -500 || pos.x > 1524 || pos.y > 1524 || pos.y < -500
-        entity_manager.remove_entity ent_id
+        entity_manager.remove_entity id: ent_id
       end
     end
   end
@@ -787,7 +783,9 @@ class RenderSystem
 
 
   def draw(target, entity_manager)
-    # target.scale(0.5, 0.5) do
+    camera = entity_manager.find(Camera).first.components.first
+
+    target.scale(camera.scale, camera.scale, camera.target_x, camera.target_y) do
 
     entity_manager.each_entity Label, Position do |rec|
       label, pos = rec.components
@@ -907,6 +905,8 @@ class RenderSystem
       end
     end
 
+    # end
+    end
   end
 end
 
@@ -960,14 +960,4 @@ class ColorMix
     color = CMYK.new c, m, y, k, a
     ColorMix.to_rgba(color)
   end
-end
-
-def pretty_color(c)
-  "[#{c.red},#{c.green},#{c.blue}]"
-end
-
-if $0 == __FILE__
-  require 'gosu'
-  puts pretty_color( ColorMix.mix(Gosu::Color::RED, Gosu::Color::YELLOW) )
-  puts pretty_color( ColorMix.mix(Gosu::Color::BLUE, Gosu::Color::YELLOW) )
 end
