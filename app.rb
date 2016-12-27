@@ -133,10 +133,6 @@ class PixelMonster < Gosu::Window
   def button_down(id)
     if id == Gosu::KbP
       ap @world.entity_manager
-    elsif id == Gosu::KbO
-      @world.entity_manager.add_entity(ZoomCameraOperation.new(scale: 3, target_x: 450, target_y: 100, duration: 400))
-    elsif id == Gosu::KbI
-      @world.entity_manager.add_entity(ZoomCameraOperation.new(scale: 0, target_x: 450, target_y: 100, duration: 300))
     end
     @input_cacher.button_down id
   end

@@ -68,11 +68,20 @@ module Prefab
     best_ms = level.best_ms_to_complete
     best = best_ms ? (best_ms/1000).round(1) : "?"
     entity_manager.add_entity Label.new(size: 16, text: "(#{best})"), Position.new(510, 80, 99)
+
   end
 
   def self.monster_exit(entity_manager:,x:,y:,color:)
       entity_manager.add_entity Exit.new, JoyColor.new(color), Position.new(x, y), Boxed.new(14,14)
       entity_manager.add_entity Exit.new, JoyColor.new(Color::BLACK), Position.new(x, y), Boxed.new(8,8)
+
+
+      # TODO how to pause game while this is happening?
+#       zoom = ZoomCameraOperation.new(scale: 3, target_x: x, target_y: y, duration: 400)
+#       entity_manager.add_entity Timer.new(:zoom_exit, 500, false, zoom)
+#
+#       unzoom = ZoomCameraOperation.new(scale: 0, target_x: x, target_y: y, duration: 300)
+#       entity_manager.add_entity Timer.new(:unzoom_exit, 1000, false, unzoom)
   end
 
   def self.color_source(entity_manager:,x:,y:,color:)

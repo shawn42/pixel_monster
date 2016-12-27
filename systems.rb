@@ -1,11 +1,3 @@
-module Gosu
-  class Color
-    def info
-      [red,green,blue,alpha].inspect
-    end
-  end
-end
-
 module Enumerable
   def sum
     size > 0 ? inject(0, &:+) : 0
@@ -48,7 +40,6 @@ class ParticlesEmitterSystem
           Velocity.new(x: speed.sample, y: speed.sample), Boxed.new(size.sample,size.sample), EntityTarget.new(evt.target)
       end
 
-      # entity_manager.remove_component klass: EmitParticlesEvent, id: ent_id
       entity_manager.remove_entity id: ent_id
     end
   end
@@ -73,11 +64,11 @@ class MonsterSystem
   MAX_VEL = 15
   MIN_DIST = 44
   MIN_DIST_SQUARED = MIN_DIST * MIN_DIST
-  JUMPS = ['jump1.wav','jump2.wav']
-  COLLECT = 'collect.wav'
-  WIN_SOUND = 'exit.wav'
-  WRONG_COLOR = 'wrong_color.wav'
-  DEATH_SOUND = 'death.wav'
+  JUMPS = ['sounds/jump1.wav','sounds/jump2.wav']
+  COLLECT = 'sounds/collect.wav'
+  WIN_SOUND = 'sounds/exit.wav'
+  WRONG_COLOR = 'sounds/wrong_color.wav'
+  DEATH_SOUND = 'sounds/death.wav'
 
   def update(entity_manager, dt, input)
     level = entity_manager.find(Level).first.get(Level)
@@ -678,7 +669,10 @@ class TimerSystem
 
       if timer.expires_at
         if timer.expires_at < current_time_ms
-          entity_manager.add_component component: timer.event.new, id: ent_id if timer.event
+          if timer.event
+            event_comp = timer.event.is_a?(Class) ? timer.event.new : timer.event
+            entity_manager.add_component component: event_comp, id: ent_id
+          end
           if timer.repeat
             timer.expires_at = current_time_ms + timer.total
           else

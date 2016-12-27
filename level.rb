@@ -1,78 +1,8 @@
 require 'chunky_png'
 require_relative 'vec'
+require_relative 'tiles'
 require_relative 'movable_tile_path'
-class Gosu::Color
-  def to_s
-    "RGBA: #{red}-#{green}-#{blue}-#{alpha}"
-  end
-end
-
-class Tile
-  attr_accessor :marker_color, :path
-end
-
-class ColorSourceTile < Tile
-  def self.from_color(color)
-    self.new.tap do |t|
-      t.marker_color = color
-    end
-  end
-end
-
-class SpecialTile < Tile
-end
-
-class BlackHoleTile < SpecialTile
-  attr_accessor :subtract_color
-  def self.from_colors(colors)
-    self.new.tap do |t|
-      t.marker_color = colors[1]
-      t.subtract_color = colors[2] || Gosu::Color::WHITE
-    end
-  end
-end
-
-class BrightTile < SpecialTile
-  attr_accessor :color
-  def self.from_colors(colors)
-    self.new.tap do |t|
-      t.marker_color = colors[1]
-      t.color = colors[2]
-    end
-  end
-end
-
-class RainbowTile < SpecialTile
-  attr_accessor :colors
-  def self.from_colors(colors)
-    self.new.tap do |t|
-      t.marker_color = colors[1]
-      t.colors = colors[2..-1]
-    end
-  end
-end
-
-class BouncyTile < SpecialTile
-  def self.from_colors(colors)
-    self.new.tap do |t|
-      t.marker_color = colors[1]
-    end
-  end
-end
-class DeathTile < SpecialTile
-  def self.from_colors(colors)
-    self.new.tap do |t|
-      t.marker_color = colors[1]
-    end
-  end
-end
-class EmptyTile < SpecialTile
-  def self.from_colors(colors)
-    self.new.tap do |t|
-      t.marker_color = colors[1]
-    end
-  end
-end
+require_relative 'map'
 
 RELATIVE_DIR_MAP = {
   Vec::UP => {
@@ -275,35 +205,3 @@ class Level
   end
 end
 
-class Map
-  # TODO do these need to be anything other than just T/F
-  TILE_SIZE = 32
-  HALF_TILE_SIZE = TILE_SIZE / 2
-  attr_accessor :tiles,
-    :exit_x, :exit_y, :exit_color,
-    :player_x, :player_y, :average_color,
-    :special_tile_defs
-  def initialize
-    @tiles = Hash.new{|h,k|h[k] = {}}
-    @special_tile_defs = {}
-  end
-
-  def map_to_world(tile_x, tile_y)
-    vec(tile_x*TILE_SIZE+TILE_SIZE/2, tile_y*TILE_SIZE+TILE_SIZE/2)
-  end
-
-  def world_to_map(world_x, world_y)
-    vec(world_x.round/TILE_SIZE, world_y.round/TILE_SIZE)
-  end
-
-  def blocked?(world_x, world_y)
-    @tiles[world_x / TILE_SIZE][world_y / TILE_SIZE]
-  end
-  alias at blocked?
-
-  def in_exit?(world_x, world_y)
-    x = world_x / TILE_SIZE
-    y = world_y / TILE_SIZE
-    x == @exit_x && y == @exit_y
-  end
-end

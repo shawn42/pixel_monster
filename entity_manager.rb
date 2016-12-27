@@ -76,7 +76,7 @@ class EntityManager
     end
   end
 
-  def remove_entites(ids: ids)
+  def remove_entites(ids:)
     if _iterating?
       _remove_entities_later(ids: ids)
     else
@@ -84,7 +84,7 @@ class EntityManager
     end
   end
 
-  def remove_entity(id: id)
+  def remove_entity(id:)
     if _iterating?
       _remove_entity_later(id: id)
     else
