@@ -22,20 +22,24 @@ class Scoreboard
   end
 
   def best(number:)
-    @scores[number]
+    @scores[number] ? @scores[number][:time] : nil
   end
 
   def completed_level(level:,  number:)
     new_time = level.last_ms_to_complete
     return unless new_time
 
-    old_time = @scores[number] || 1.0/0
+    old_time = best(number: number) || 1.0/0
     if new_time < old_time
-      @scores[number] = new_time
+      @scores[number] ||= {}
+      @scores[number][:time] = new_time
     end
     puts "completed level #{number} with #{level.last_ms_to_complete}"
     puts "SCORES:"
-    puts @scores.inspect
+    @scores.keys.sort.each do |level|
+      data = @scores[level]
+      puts "#{level}: #{data[:time]/1000}s"
+    end
 
     write_to_file
   end

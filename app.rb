@@ -23,6 +23,7 @@ class PixelMonster < Gosu::Window
     @music_files = Dir['./music/*.mp3']
     @input_cacher = InputCacher.new
     @scoreboard = Scoreboard.new
+    @last_millis = Gosu::milliseconds.to_f
     build_world
 
     next_level
@@ -31,6 +32,29 @@ class PixelMonster < Gosu::Window
   def needs_cursor?
     false
   end
+
+  def update
+    self.caption = "FPS: #{Gosu.fps} ENTS: #{@entity_manager.num_entities}"
+    update_level!
+
+    delta = relative_delta
+    snapshot = take_input_snapshot
+    @last_update = @world.update @entity_manager, delta, snapshot
+    # TODO use last_update[:global_events] for something: like level changes?
+  end
+
+  def draw
+    @render_system.draw self, @entity_manager
+  end
+
+  def button_down(id)
+    @input_cacher.button_down id
+  end
+
+  def button_up(id)
+    @input_cacher.button_up id
+  end
+  private
 
   def next_level
     @music.stop if @music
@@ -75,16 +99,15 @@ class PixelMonster < Gosu::Window
     @level = Level.load(file_name: @filename, 
                         number: @level_number, 
                         high_scores: @scoreboard)
-    @world.reset! if @world
+    @entity_manager.clear! if @entity_manager
     @level.reset! if @level
-    Prefab.level entity_manager: @world.entity_manager, level: @level
-    Prefab.camera entity_manager: @world.entity_manager, scale: 1, x: 512, y: 512
+    Prefab.level entity_manager: @entity_manager, level: @level
+    Prefab.camera entity_manager: @entity_manager, scale: 1, x: 512, y: 512
   end
 
   def build_world
-    entity_manager = EntityManager.new
-
-    @world = World.new entity_manager, [
+    @entity_manager = EntityManager.new
+    @world = World.new [
       InputMappingSystem.new,
       CameraSystem.new,
       MonsterSystem.new,
@@ -100,49 +123,34 @@ class PixelMonster < Gosu::Window
     @render_system = RenderSystem.new
   end
 
-  def update
+  def update_level!
     if @level.complete?
-      update_scoreboard!(@level)
+      update_scoreboard!
       next_level 
     end
     reset_level if @level.failed?
-    self.caption = "FPS: #{Gosu.fps} ENTS: #{@world.entity_manager.num_entities}"
+  end
 
+  def update_scoreboard!
+    @scoreboard.completed_level level: @level, number: @level_number
+  end
+
+  def relative_delta
+    total_millis = Gosu::milliseconds.to_f
+    delta = total_millis
+    delta -= @last_millis if total_millis > @last_millis
+    @last_millis = total_millis
+    delta = MAX_UPDATE_SIZE_IN_MILLIS if delta > MAX_UPDATE_SIZE_IN_MILLIS
+    delta
+  end
+
+  def take_input_snapshot
     total_millis = Gosu::milliseconds.to_f
 
-    # ignore the first update
-    if @last_millis
-      delta = total_millis
-      delta -= @last_millis if total_millis > @last_millis
-      delta = MAX_UPDATE_SIZE_IN_MILLIS if delta > MAX_UPDATE_SIZE_IN_MILLIS
-
-      mouse_pos = {x: mouse_x, y: mouse_y}
-      input_snapshot = @input_cacher.snapshot @last_snapshot, total_millis, mouse_pos
-      @last_snapshot = input_snapshot
-
-      @world.update delta, input_snapshot
-    end
-
-    @last_millis = total_millis
-  end
-
-  def draw
-    @render_system.draw self, @world.entity_manager
-  end
-
-  def button_down(id)
-    if id == Gosu::KbP
-      ap @world.entity_manager
-    end
-    @input_cacher.button_down id
-  end
-
-  def button_up(id)
-    @input_cacher.button_up id
-  end
-
-  def update_scoreboard!(level)
-    @scoreboard.completed_level level: level, number: @level_number
+    mouse_pos = {x: mouse_x, y: mouse_y}
+    input_snapshot = @input_cacher.snapshot @last_snapshot, total_millis, mouse_pos
+    @last_snapshot = input_snapshot
+    input_snapshot
   end
 end
 

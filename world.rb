@@ -1,18 +1,17 @@
 class World
-  attr_accessor :entity_manager
-  def initialize(entity_manager, systems)
-    @entity_manager = entity_manager
+  def initialize(systems)
     @systems = systems
   end
 
-  def reset!
-    @entity_manager.clear!
-  end
-
-  def update(delta, input_snapshot)
-    @systems.each do |sys|
-      sys.update entity_manager, delta, input_snapshot
+  def update(entity_manager, delta, input_snapshot)
+    global_events = []
+    @systems.map do |sys|
+      sys.update entity_manager, delta, input_snapshot, global_events
     end
+
+    {entity_manager: entity_manager,
+     global_events: global_events,
+    }
   end
 
 end

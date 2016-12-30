@@ -5,7 +5,7 @@ module Enumerable
 end
 
 class CameraSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     camera = entity_manager.find(Camera).first.components.first
 
     entity_manager.each_entity(ZoomCameraOperation) do |rec|
@@ -27,7 +27,7 @@ class ParticlesEmitterSystem
   SPEED = (-3..3).to_a
   POSITIONS = (-15..15).to_a
   SIZE = (1..3).to_a
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     entity_manager.each_entity(EmitParticlesEvent, Position) do |rec|
       ent_id = rec.id
       evt, pos = rec.components
@@ -46,7 +46,7 @@ class ParticlesEmitterSystem
 end
 
 class TimedLevelSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
    timed, label, lt  = entity_manager.find(Timed, Label, LevelTimer).first.components
    label.text = (timed.accumulated_time_in_ms/1000).round(1)
   end
@@ -70,7 +70,7 @@ class MonsterSystem
   WRONG_COLOR = 'sounds/wrong_color.wav'
   DEATH_SOUND = 'sounds/death.wav'
 
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     level = entity_manager.find(Level).first.get(Level)
     map = level.map
 
@@ -605,7 +605,7 @@ class MonsterSystem
 end
 
 class RainbowSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
 
     entity_manager.each_entity(ChangeColorEvent, Rainbow, JoyColor) do |rec|
       rainbow_id = rec.id
@@ -619,7 +619,7 @@ class RainbowSystem
 end
 
 class ParticlesSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     entity_manager.each_entity(Velocity, Particle, Position, JoyColor, EntityTarget) do |rec|
       ent_id = rec.id
       vel, particle, pos, color, ent_target = rec.components
@@ -651,7 +651,7 @@ class ParticlesSystem
   end
 end
 class TimedSystem
-  def update(entity_manager, delta, input)
+  def update(entity_manager, delta, input, global_events)
     entity_manager.each_entity Timed do |rec|
       timed = rec.get(Timed)
       ent_id = rec.id
@@ -661,7 +661,7 @@ class TimedSystem
 end
 
 class TimerSystem
-  def update(entity_manager, delta, input)
+  def update(entity_manager, delta, input, global_events)
     current_time_ms = input.total_time
     entity_manager.each_entity Timer do |rec|
       timer = rec.get(Timer)
@@ -688,7 +688,7 @@ class TimerSystem
 end
 
 class InputMappingSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     $window.close if input.down?(Gosu::KbEscape) || input.down?(Gosu::GpButton8)
     # entity_manager.each_entity KeyboardControl, Controls do |rec|
     #   keys, control = rec.components
@@ -702,7 +702,7 @@ class InputMappingSystem
 end
 
 class SoundSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     entity_manager.each_entity SoundEffectEvent do |rec|
       ent_id = rec.id
       effect = rec.get(SoundEffectEvent)
@@ -713,7 +713,7 @@ class SoundSystem
 end
 
 class PathingSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     # map = entity_manager.find(Level).first.get(Level).map
 
     entity_manager.each_entity(Velocity, Position, Pathable) do |rec|
@@ -725,7 +725,7 @@ class PathingSystem
 end
 
 class BackgroundSystem
-  def update(entity_manager, dt, input)
+  def update(entity_manager, dt, input, global_events)
     map = entity_manager.find(Level).first.get(Level).map
 
     blobs = entity_manager.find(BackgroundBlob)
