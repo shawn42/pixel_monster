@@ -141,6 +141,7 @@ class MonsterSystem
     end
 
     old_y_vel = vel.y
+    old_x_vel = vel.x
 
     vel.y = 0 if on_ground && !on_moving_tile
 
@@ -203,6 +204,7 @@ class MonsterSystem
     x_step = vel.x < 0 ? -1 : 1
     w = boxed.width
     h = boxed.height
+    x_hit = false
     vel.x.round.abs.times do
       new_x = (monster_pos.x + x_step) % (1024-16)
       if map.blocked?(new_x-w, monster_pos.y-h) ||
@@ -211,13 +213,14 @@ class MonsterSystem
         map.blocked?(new_x+w, monster_pos.y+h) ||
         in_moving_tile?(moving_tiles, new_x, monster_pos.y, w, h)
         vel.x = 0
+        x_hit = true
         break
       else
         monster_pos.x = new_x
       end
     end
 
-    y_hit = nil
+    y_hit = false
     y_step = vel.y < 0 ? -1 : 1
     vel.y.round.abs.times do
       new_y = monster_pos.y + y_step
@@ -228,7 +231,7 @@ class MonsterSystem
         in_moving_tile?(moving_tiles, monster_pos.x, new_y, w, h)
         vel.y = 0
         monster_platform.jump_time = 0
-        y_hit = vel.y
+        y_hit = true
         break
       else
         monster_pos.y = new_y
@@ -244,31 +247,54 @@ class MonsterSystem
     end
 
     if jumping
-      boxed.squished_at = input.total_time
+      boxed.squished_y_at = input.total_time
       boxed.squish_height = ((-36/MAX_VEL.to_f)*SQUISH_MAX)#.floor
-      boxed.squish_dir = old_y_vel > 0 ? 1 : -1
+      boxed.squish_y_dir = old_y_vel > 0 ? 1 : -1
     end
 
     if (y_hit && old_y_vel.abs > 0)
       entity_manager.add_entity SoundEffectEvent.new(COLLECT) # TODO new sound for hitting?
-      boxed.squished_at = input.total_time
+      boxed.squished_y_at = input.total_time
       boxed.squish_height = (([old_y_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
-      boxed.squish_dir = old_y_vel > 0 ? 1 : -1
+      boxed.squish_y_dir = old_y_vel > 0 ? 1 : -1
     end
 
-    if boxed.squished_at
-      squish_dt = input.total_time - boxed.squished_at
+    if (x_hit && old_x_vel.abs > 0)
+      # entity_manager.add_entity SoundEffectEvent.new(COLLECT) # TODO new sound for hitting?
+      boxed.squished_x_at = input.total_time
+      boxed.squish_width = (([old_x_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
+      boxed.squish_x_dir = old_x_vel > 0 ? 1 : -1
+    end
+
+    if boxed.squished_y_at
+      squish_dt = input.total_time - boxed.squished_y_at
       if squish_dt < SQUISH_DURATION
         if squish_dt < PEAK_DURATION
-          boxed.squish_amount = (boxed.squish_height * (squish_dt/PEAK_DURATION))#.floor
+          boxed.squish_y_amount = (boxed.squish_height * (squish_dt/PEAK_DURATION))#.floor
         else
-          boxed.squish_amount = (boxed.squish_height * (1.0-(squish_dt-PEAK_DURATION)/(SQUISH_DURATION - PEAK_DURATION)))#.floor
+          boxed.squish_y_amount = (boxed.squish_height * (1.0-(squish_dt-PEAK_DURATION)/(SQUISH_DURATION - PEAK_DURATION)))#.floor
         end
       else
-        boxed.squished_at = nil
-        boxed.squish_amount = 0
-        boxed.squish_amount = 0
-        boxed.squish_dir = 0
+        boxed.squished_y_at = nil
+        boxed.squish_y_amount = 0
+        boxed.squish_y_amount = 0
+        boxed.squish_y_dir = 0
+      end
+    end
+
+    if boxed.squished_x_at
+      squish_dt = input.total_time - boxed.squished_x_at
+      if squish_dt < SQUISH_DURATION
+        if squish_dt < PEAK_DURATION
+          boxed.squish_x_amount = (boxed.squish_width * (squish_dt/PEAK_DURATION))#.floor
+        else
+          boxed.squish_x_amount = (boxed.squish_width * (1.0-(squish_dt-PEAK_DURATION)/(SQUISH_DURATION - PEAK_DURATION)))#.floor
+        end
+      else
+        boxed.squished_x_at = nil
+        boxed.squish_x_amount = 0
+        boxed.squish_x_amount = 0
+        boxed.squish_x_dir = 0
       end
     end
 
@@ -579,7 +605,7 @@ class MonsterSystem
   end
 
   def reflectance(absorbtionRatio)
-		1.0 + absorbtionRatio - Math.sqrt(absorbtionRatio * absorbtionRatio + (2.0 * absorbtionRatio))
+    1.0 + absorbtionRatio - Math.sqrt(absorbtionRatio * absorbtionRatio + (2.0 * absorbtionRatio))
   end
 
   def subtract_colors(base: , subtracted:)
@@ -817,17 +843,25 @@ class RenderSystem
     entity_manager.each_entity Position, JoyColor, Boxed do |rec|
       pos, color, boxed = rec.components
       ent_id = rec.id
-      y_off = (boxed.squish_amount * boxed.squish_dir / 2.0)#.floor
-      squish = (boxed.squish_amount / 2.0)#.floor
-      half_squish = squish / 2.0
+      y_off = (boxed.squish_y_amount * boxed.squish_y_dir / 2.0)#.floor
+      y_squish = (boxed.squish_y_amount / 2.0)#.floor
+      half_y_squish = y_squish / 2.0
+
+      x_squish = (boxed.squish_x_amount / 2.0)#.floor
+      x_dir = boxed.squish_x_dir
+      squish_right = x_dir > 0 
+      squish_left = x_dir < 0 
 
       c1 = c2 = c3 = c4 = color.color
-      x1 = pos.x - boxed.width - half_squish
-      y1 = pos.y - boxed.height + y_off + squish
-      x2 = pos.x + boxed.width + half_squish
-      y2 = y1
-      x3 = x2
-      y3 = pos.y + boxed.height + y_off - squish
+      x1 = pos.x - boxed.width - half_y_squish + (squish_right ? x_squish : 0)
+      y1 = pos.y - boxed.height + y_off + y_squish - (squish_left ? 3 * x_squish : x_squish)
+
+      x2 = pos.x + boxed.width + half_y_squish + (squish_left ? -x_squish : 0)
+      y2 = pos.y - boxed.height + y_off + y_squish - (squish_right ? 3 * x_squish : x_squish)
+
+      x3 = x2 
+      y3 = pos.y + boxed.height + y_off - y_squish
+
       x4 = x1
       y4 = y3
       if monster_id == ent_id

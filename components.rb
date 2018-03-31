@@ -116,13 +116,20 @@ end
 class ColorSink < JoyColor; end
 
 class Boxed
-  attr_accessor :width, :height, :squished_at, :squish_height, :squish_amount, :squish_dir
+  attr_accessor :width, :height, 
+    :squished_y_at, :squish_height, :squish_y_amount, :squish_y_dir,
+    :squished_x_at, :squish_width, :squish_x_amount, :squish_x_dir
   def initialize(width,height)
     @width = width
     @height = height
+
     @squish_height = 0
-    @squish_amount = 0
-    @squish_dir = 0
+    @squish_y_amount = 0
+    @squish_y_dir = 0
+
+    @squish_width = 0
+    @squish_x_amount = 0
+    @squish_x_dir = 0
   end
 end
 
