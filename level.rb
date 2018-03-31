@@ -90,6 +90,14 @@ class Level
     level
   end
 
+  def self.color_close_enough?(color, path_color)
+    # be forgiving here, because pixel editors suck.
+    return (color.red - path_color.red).abs < 4 &&
+           (color.green - path_color.green).abs < 4 &&
+           (color.blue - path_color.blue).abs < 4 &&
+           color.alpha < MAX_ALPHA
+  end
+
   def self.find_path_locs(png, start_loc, path_color)
     path_locs = []
     open_list = [start_loc]
@@ -104,16 +112,7 @@ class Level
         end
 
         if color && !path_locs.include?(loc)
-          # puts "red: #{color.red} vs #{path_color.red}"
-          # puts "green: #{color.green} vs #{path_color.green}"
-          # puts "blue: #{color.blue} vs #{path_color.blue}"
-          # puts "alpha: #{color.alpha}"
-          if color.red == path_color.red &&
-            color.green == path_color.green &&
-            color.blue == path_color.blue &&
-            color.alpha < MAX_ALPHA
-            open_list << loc
-          end
+          open_list << loc if color_close_enough? color, path_color
         end
       end
 

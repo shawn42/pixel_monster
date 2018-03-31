@@ -1,3 +1,4 @@
 scores.yml
 *.swp
 *.swo
+.DS_Store

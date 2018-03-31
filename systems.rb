@@ -127,10 +127,9 @@ class MonsterSystem
     ground_below = on_ground?(map, monster_pos, boxed)
 
     moving_tiles = entity_manager.find(MovableTile, Position, Boxed)
-
     moving_tile_below = on_moving_tile?(map, monster_pos, boxed, moving_tiles)
-    on_moving_tile = moving_tile_below
 
+    on_moving_tile = moving_tile_below
     tile_below = on_ground = moving_tile_below || ground_below
     # puts "tile below: #{tile_below}"
 
@@ -273,8 +272,6 @@ class MonsterSystem
       end
     end
 
-
-
     # ColorStuffSystem
     entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed, MovableTile) do |rec|
       src_id = rec.id
@@ -294,7 +291,6 @@ class MonsterSystem
         entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
         # TODO this is only a box to draw.. need to replace with movabletile?
-
         eid = Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
         entity_manager.add_component( id:eid, component: movable )
       end
@@ -321,6 +317,33 @@ class MonsterSystem
       end
     end
 
+    entity_manager.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border, MovableTile) do |rec|
+      src_id = rec.id
+      src, pos, source_color, box, border, movable = rec.components
+      sc = source_color.color
+
+      x_off = pos.x - monster_pos.x
+      y_off = pos.y - monster_pos.y
+      dist = x_off*x_off+y_off*y_off
+
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+        monster_color.color = sc
+
+        entity_manager.remove_entity id: src_id
+
+        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+        # TODO this is only a box to draw.. need to replace with movabletile?
+        eid = Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+        entity_manager.add_component( id:eid, component: movable )
+      else
+        # TODO make this more of a pulse effect
+        change = (-2..2).to_a.sample
+        border.width = clamp(border.width + change, 14..18)
+        border.height = clamp(border.height + change, 14..18)
+      end
+    end
+
     entity_manager.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border) do |rec|
       src_id = rec.id
       src, pos, source_color, box, border = rec.components
@@ -339,6 +362,7 @@ class MonsterSystem
         entity_manager.add_entity SoundEffectEvent.new(COLLECT)
         Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
       else
+        # TODO make this more of a pulse effect
         change = (-2..2).to_a.sample
         border.width = clamp(border.width + change, 14..18)
         border.height = clamp(border.height + change, 14..18)
