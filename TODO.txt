@@ -1,12 +1,8 @@
-add level timer
 additional music, can be dynamically generated?!!
-add timer high scores
 allow larger than 32x32 maps
 allow continuation of command blocks (last block binary for "next line"?)
 
-coop mode?
-power ups? 
-
+coop mode?  power ups?  
 make particle system an entity instead of each particle
 
 splash screen
@@ -25,5 +21,8 @@ builds
 
 
 BUGS
+ - sometimes not killed my landing on a glitch tile (only seen when block is going up) (system ordering issue?) (do we set the player velocity to the tiles vel?)
  - riding on bouncy tile does not always let you super bounce
  - clean up duplicate code for color source consumption
+ - end of level time / stars
+ - start timer once player moves
