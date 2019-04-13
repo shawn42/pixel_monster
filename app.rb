@@ -1,4 +1,5 @@
 require 'gosu'
+require 'game_ecs'
 require 'awesome_print'
 # require 'pry'
 
@@ -8,12 +9,12 @@ require_relative 'components'
 require_relative 'prefab'
 require_relative 'systems'
 require_relative 'world'
-require_relative 'entity_manager'
 require_relative 'input_cacher'
 require_relative 'level'
 require_relative 'scoreboard'
 
 
+Q = GameEcs::Query
 class PixelMonster < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
   def initialize
@@ -34,17 +35,17 @@ class PixelMonster < Gosu::Window
   end
 
   def update
-    self.caption = "FPS: #{Gosu.fps} ENTS: #{@entity_manager.num_entities}"
+    self.caption = "FPS: #{Gosu.fps} ENTS: #{@entity_store.num_entities}"
     update_level!
 
     delta = relative_delta
     snapshot = take_input_snapshot
-    @last_update = @world.update @entity_manager, delta, snapshot
+    @last_update = @world.update @entity_store, delta, snapshot
     # TODO use last_update[:global_events] for something: like level changes?
   end
 
   def draw
-    @render_system.draw self, @entity_manager
+    @render_system.draw self, @entity_store
   end
 
   def button_down(id)
@@ -99,14 +100,14 @@ class PixelMonster < Gosu::Window
     @level = Level.load(file_name: @filename, 
                         number: @level_number, 
                         high_scores: @scoreboard)
-    @entity_manager.clear! if @entity_manager
+    @entity_store.clear! if @entity_store
     @level.reset! if @level
-    Prefab.level entity_manager: @entity_manager, level: @level
-    Prefab.camera entity_manager: @entity_manager, scale: 1, x: 512, y: 512
+    Prefab.level entity_store: @entity_store, level: @level
+    Prefab.camera entity_store: @entity_store, scale: 1, x: 512, y: 512
   end
 
   def build_world
-    @entity_manager = EntityManager.new
+    @entity_store = GameEcs::EntityStore.new
     @world = World.new [
       InputMappingSystem.new,
       CameraSystem.new,

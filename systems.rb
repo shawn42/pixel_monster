@@ -5,15 +5,15 @@ module Enumerable
 end
 
 class CameraSystem
-  def update(entity_manager, dt, input, global_events)
-    camera = entity_manager.find(Camera).first.components.first
+  def update(entity_store, dt, input, global_events)
+    camera = entity_store.find(Camera).first.components.first
 
-    entity_manager.each_entity(ZoomCameraOperation) do |rec|
+    entity_store.each_entity(ZoomCameraOperation) do |rec|
       op = rec.components.first
       op.ttl -= dt
       if op.ttl <= 0
         op.ttl = 0
-        entity_manager.remove_entity id: rec.id
+        entity_store.remove_entity id: rec.id
       end
       camera.scale = 1 + op.target_scale * (op.duration-op.ttl)/op.duration.to_f
       camera.target_x = op.target_x
@@ -27,27 +27,27 @@ class ParticlesEmitterSystem
   SPEED = (-3..3).to_a
   POSITIONS = (-15..15).to_a
   SIZE = (1..3).to_a
-  def update(entity_manager, dt, input, global_events)
-    entity_manager.each_entity(EmitParticlesEvent, Position) do |rec|
+  def update(entity_store, dt, input, global_events)
+    entity_store.each_entity(EmitParticlesEvent, Position) do |rec|
       ent_id = rec.id
       evt, pos = rec.components
 
       evt.intensity.times do
         speed = evt.speed || SPEED
         size = evt.size || SIZE
-        new_ent = entity_manager.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
+        new_ent = entity_store.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
           Particle.new, JoyColor.new(evt.color),
           Velocity.new(x: speed.sample, y: speed.sample), Boxed.new(size.sample,size.sample), EntityTarget.new(evt.target)
       end
 
-      entity_manager.remove_entity id: ent_id
+      entity_store.remove_entity id: ent_id
     end
   end
 end
 
 class TimedLevelSystem
-  def update(entity_manager, dt, input, global_events)
-   timed, label, lt  = entity_manager.find(Timed, Label, LevelTimer).first.components
+  def update(entity_store, dt, input, global_events)
+   timed, label, lt  = entity_store.find(Timed, Label, LevelTimer).first.components
    label.text = (timed.accumulated_time_in_ms/1000).round(1)
   end
 end
@@ -70,15 +70,15 @@ class MonsterSystem
   WRONG_COLOR = 'sounds/wrong_color.wav'
   DEATH_SOUND = 'sounds/death.wav'
 
-  def update(entity_manager, dt, input, global_events)
-    level = entity_manager.find(Level).first.get(Level)
+  def update(entity_store, dt, input, global_events)
+    level = entity_store.find(Level).first.get(Level)
     map = level.map
 
-    if entity_manager.find(DyingEvent).first
+    if entity_store.find(DyingEvent).first
       level.failed! 
     end
 
-    monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
+    monster_rec = entity_store.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     return if monster_rec.nil?
     ent_id = monster_rec.id
     monster, monster_platform, monster_pos, monster_color, boxed, vel = monster_rec.components
@@ -88,15 +88,15 @@ class MonsterSystem
     end
 
     if input.down?(Gosu::KbR) || input.pressed?(Gosu::GpButton4) 
-      death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color)
+      death_at(entity_store, monster_pos.x, monster_pos.y, monster_color.color)
     end
 
     if monster_pos.y > 1100
-      death_at(entity_manager, monster_pos.x, monster_pos.y-100, monster_color.color)
+      death_at(entity_store, monster_pos.x, monster_pos.y-100, monster_color.color)
     end
 
     has_exit_color = has_exit_color?(map, monster_color.color)
-    exit_recs = entity_manager.find(Exit, Position, JoyColor, Boxed)
+    exit_recs = entity_store.find(Exit, Position, JoyColor, Boxed)
     exit_recs.each do |exit_rec|
       ex, exit_pos, exit_color, exit_boxed = exit_rec.components
       open = ex.open
@@ -116,17 +116,17 @@ class MonsterSystem
 
     if in_exit?(map, monster_pos, boxed)
       if has_exit_color
-        entity_manager.add_entity SoundEffectEvent.new(WIN_SOUND)
-        timed = entity_manager.find(Timed, LevelTimer).first.get(Timed)
+        entity_store.add_entity SoundEffectEvent.new(WIN_SOUND)
+        timed = entity_store.find(Timed, LevelTimer).first.get(Timed)
         level.complete!(ms_to_complete: timed.accumulated_time_in_ms)
       else
-        # entity_manager.add_entity SoundEffectEvent.new(WRONG_COLOR)
+        # entity_store.add_entity SoundEffectEvent.new(WRONG_COLOR)
       end
     end
 
     ground_below = on_ground?(map, monster_pos, boxed)
 
-    moving_tiles = entity_manager.find(MovableTile, Position, Boxed)
+    moving_tiles = entity_store.find(MovableTile, Position, Boxed)
     moving_tile_below = on_moving_tile?(map, monster_pos, boxed, moving_tiles)
 
     on_moving_tile = moving_tile_below
@@ -135,7 +135,7 @@ class MonsterSystem
 
     if on_ground
       monster_platform.last_grounded_at = input.total_time
-      moving_boosters = entity_manager.find(MovableTile, Position, Boxed, Bouncy)
+      moving_boosters = entity_store.find(MovableTile, Position, Boxed, Bouncy)
       should_boost = should_boost?(map, monster_pos, boxed, moving_boosters)
       monster_platform.last_tile_bouncy = should_boost
     end
@@ -178,7 +178,7 @@ class MonsterSystem
       vel.y -= jump_strength
       monster_platform.last_grounded_at = -1
       monster_platform.last_tile_bouncy = false
-      entity_manager.add_entity SoundEffectEvent.new(JUMPS.sample)
+      entity_store.add_entity SoundEffectEvent.new(JUMPS.sample)
     elsif (input.released?(Gosu::KbUp) || input.released?(Gosu::GpButton1))
       if (monster_platform.last_jump == SUPER_JUMP_HEIGHT)
         vel.y = -monster_platform.last_jump * 0.6 if vel.y < -monster_platform.last_jump * 0.6
@@ -253,14 +253,14 @@ class MonsterSystem
     end
 
     if (y_hit && old_y_vel.abs > 0)
-      entity_manager.add_entity SoundEffectEvent.new(COLLECT) # TODO new sound for hitting?
+      entity_store.add_entity SoundEffectEvent.new(COLLECT) # TODO new sound for hitting?
       boxed.squished_y_at = input.total_time
       boxed.squish_height = (([old_y_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
       boxed.squish_y_dir = old_y_vel > 0 ? 1 : -1
     end
 
     if (x_hit && old_x_vel.abs > 0)
-      # entity_manager.add_entity SoundEffectEvent.new(COLLECT) # TODO new sound for hitting?
+      # entity_store.add_entity SoundEffectEvent.new(COLLECT) # TODO new sound for hitting?
       boxed.squished_x_at = input.total_time
       boxed.squish_width = (([old_x_vel.abs,6].max/MAX_VEL.to_f)*SQUISH_MAX)#.floor
       boxed.squish_x_dir = old_x_vel > 0 ? 1 : -1
@@ -299,7 +299,7 @@ class MonsterSystem
     end
 
     # ColorStuffSystem
-    entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed, MovableTile) do |rec|
+    entity_store.each_entity(ColorSource, Position, JoyColor, Boxed, MovableTile) do |rec|
       src_id = rec.id
       src, pos, source_color, box, movable = rec.components
       sc = source_color.color
@@ -312,17 +312,17 @@ class MonsterSystem
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
 
-        entity_manager.remove_entity id: src_id
+        entity_store.remove_entity id: src_id
 
-        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
-        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+        entity_store.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_store.add_entity SoundEffectEvent.new(COLLECT)
         # TODO this is only a box to draw.. need to replace with movabletile?
-        eid = Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
-        entity_manager.add_component( id:eid, component: movable )
+        eid = Prefab.tile(entity_store: entity_store, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+        entity_store.add_component( id:eid, component: movable )
       end
     end
 
-    entity_manager.each_entity(ColorSource, Position, JoyColor, Boxed) do |rec|
+    entity_store.each_entity(ColorSource, Position, JoyColor, Boxed) do |rec|
       src_id = rec.id
       src, pos, source_color, box = rec.components
       sc = source_color.color
@@ -335,15 +335,15 @@ class MonsterSystem
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
 
-        entity_manager.remove_entity id: src_id
+        entity_store.remove_entity id: src_id
 
-        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
-        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
-        Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+        entity_store.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_store.add_entity SoundEffectEvent.new(COLLECT)
+        Prefab.tile(entity_store: entity_store, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
       end
     end
 
-    entity_manager.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border, MovableTile) do |rec|
+    entity_store.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border, MovableTile) do |rec|
       src_id = rec.id
       src, pos, source_color, box, border, movable = rec.components
       sc = source_color.color
@@ -355,13 +355,13 @@ class MonsterSystem
       if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
         monster_color.color = sc
 
-        entity_manager.remove_entity id: src_id
+        entity_store.remove_entity id: src_id
 
-        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
-        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+        entity_store.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_store.add_entity SoundEffectEvent.new(COLLECT)
         # TODO this is only a box to draw.. need to replace with movabletile?
-        eid = Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
-        entity_manager.add_component( id:eid, component: movable )
+        eid = Prefab.tile(entity_store: entity_store, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+        entity_store.add_component( id:eid, component: movable )
       else
         # TODO make this more of a pulse effect
         change = (-2..2).to_a.sample
@@ -370,7 +370,7 @@ class MonsterSystem
       end
     end
 
-    entity_manager.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border) do |rec|
+    entity_store.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border) do |rec|
       src_id = rec.id
       src, pos, source_color, box, border = rec.components
       sc = source_color.color
@@ -382,11 +382,11 @@ class MonsterSystem
       if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
         monster_color.color = sc
 
-        entity_manager.remove_entity id: src_id
+        entity_store.remove_entity id: src_id
 
-        entity_manager.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
-        entity_manager.add_entity SoundEffectEvent.new(COLLECT)
-        Prefab.tile(entity_manager: entity_manager, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
+        entity_store.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_store.add_entity SoundEffectEvent.new(COLLECT)
+        Prefab.tile(entity_store: entity_store, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
       else
         # TODO make this more of a pulse effect
         change = (-2..2).to_a.sample
@@ -396,39 +396,39 @@ class MonsterSystem
     end
 
     # BouncySystem
-    entity_manager.each_entity(Position, Boxed, Bouncy) do |rec|
+    entity_store.each_entity(Position, Boxed, Bouncy) do |rec|
       bouncy_id = rec.id
       pos, bouncy_box, bouncy = rec.components
 
       if (rand(10) < 2)
-        entity_manager.add_entity pos, EmitParticlesEvent.new(color: Gosu::Color::WHITE, intensity: 15)
+        entity_store.add_entity pos, EmitParticlesEvent.new(color: Gosu::Color::WHITE, intensity: 15)
       end
     end
 
 
     # BlackHoleSystem
-    entity_manager.each_entity(BlackHole, Position, JoyColor, ColorSink, Boxed) do |rec|
+    entity_store.each_entity(BlackHole, Position, JoyColor, ColorSink, Boxed) do |rec|
       black_hole_id = rec.id
       black_hole, pos, black_hole_color, subtract_color, box = rec.components
 
       if boxes_touch?(pos, box, monster_pos, boxed)
         if would_subtract?(base: monster_color.color, subtracted: subtract_color.color)
-          entity_manager.add_entity monster_pos, EmitParticlesEvent.new(color: subtract_color.color, target: black_hole_id, intensity: 100)
+          entity_store.add_entity monster_pos, EmitParticlesEvent.new(color: subtract_color.color, target: black_hole_id, intensity: 100)
           monster_color.color = subtract_colors(base: monster_color.color, subtracted: subtract_color.color)
-          entity_manager.add_entity SoundEffectEvent.new(COLLECT)
+          entity_store.add_entity SoundEffectEvent.new(COLLECT)
         end
       end
-      # entity_manager.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:Prefab::COLORS.sample , target: black_hole_id, intensity: 1)
+      # entity_store.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:Prefab::COLORS.sample , target: black_hole_id, intensity: 1)
       if rand(3) == 0
-        entity_manager.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:subtract_color.color, target: black_hole_id, intensity: 1)
+        entity_store.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:subtract_color.color, target: black_hole_id, intensity: 1)
       end
     end
 
     # DeathSystem
-    entity_manager.each_entity(Death, Position, Boxed) do |rec|
+    entity_store.each_entity(Death, Position, Boxed) do |rec|
       death, pos, death_box = rec.components
 
-      death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color) if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
+      death_at(entity_store, monster_pos.x, monster_pos.y, monster_color.color) if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
     end
 
     # MovableTilesSystem
@@ -470,7 +470,7 @@ class MonsterSystem
             map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
             map.blocked?(monster_pos.x+w, monster_pos.y+h)
-            death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color)
+            death_at(entity_store, monster_pos.x, monster_pos.y, monster_color.color)
           end
         end
         tile_pos.x += x_step
@@ -486,7 +486,7 @@ class MonsterSystem
             map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
             map.blocked?(monster_pos.x+w, monster_pos.y+h)
-            death_at(entity_manager, monster_pos.x, monster_pos.y, monster_color.color)
+            death_at(entity_store, monster_pos.x, monster_pos.y, monster_color.color)
           end
 
         end
@@ -497,16 +497,16 @@ class MonsterSystem
   end
 
   private
-  def death_at(entity_manager, x, y, color)
-    monster_rec = entity_manager.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
+  def death_at(entity_store, x, y, color)
+    monster_rec = entity_store.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     return if monster_rec.nil? # already dead this frame
-    entity_manager.remove_entity id: monster_rec.id
-    # entity_manager.remove_component(klass: Monster, id: monster_rec.id)
+    entity_store.remove_entity id: monster_rec.id
+    # entity_store.remove_component(klass: Monster, id: monster_rec.id)
 
-    entity_manager.add_entity SoundEffectEvent.new(DEATH_SOUND)
-    entity_manager.add_entity Timer.new(:dying, 600, false, DyingEvent)
+    entity_store.add_entity SoundEffectEvent.new(DEATH_SOUND)
+    entity_store.add_entity Timer.new(:dying, 600, false, DyingEvent)
     
-    entity_manager.add_entity Position.new(x,y), EmitParticlesEvent.new(color: color, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
+    entity_store.add_entity Position.new(x,y), EmitParticlesEvent.new(color: color, target: nil, intensity: 40, speed:(-7..7).to_a, size: (2..6).to_a)
   end
 
   def clamp(val, range)
@@ -655,22 +655,22 @@ class MonsterSystem
 end
 
 class RainbowSystem
-  def update(entity_manager, dt, input, global_events)
+  def update(entity_store, dt, input, global_events)
 
-    entity_manager.each_entity(ChangeColorEvent, Rainbow, JoyColor) do |rec|
+    entity_store.each_entity(ChangeColorEvent, Rainbow, JoyColor) do |rec|
       rainbow_id = rec.id
       evt, rainbow, color = rec.components
 
       rainbow.color_index = (rainbow.color_index + 1) % rainbow.colors.size
       color.color = rainbow.colors[rainbow.color_index]
-      entity_manager.remove_component klass: ChangeColorEvent, id: rainbow_id
+      entity_store.remove_component klass: ChangeColorEvent, id: rainbow_id
     end
   end
 end
 
 class ParticlesSystem
-  def update(entity_manager, dt, input, global_events)
-    entity_manager.each_entity(Velocity, Particle, Position, JoyColor, EntityTarget) do |rec|
+  def update(entity_store, dt, input, global_events)
+    entity_store.each_entity(Velocity, Particle, Position, JoyColor, EntityTarget) do |rec|
       ent_id = rec.id
       vel, particle, pos, color, ent_target = rec.components
 
@@ -678,7 +678,7 @@ class ParticlesSystem
       pos.x += vel.x * scalar
       pos.y += vel.y * scalar
 
-      target = entity_manager.find_by_id(ent_target.id, Position)
+      target = entity_store.find_by_id(ent_target.id, Position)
       target_pos =
         if target
           target.get(Position)
@@ -694,15 +694,15 @@ class ParticlesSystem
       c = color.color
       color.color = Gosu::Color.rgba(c.red,c.green,c.blue,c.alpha-20*scalar)
       if color.color.alpha <= 0
-        entity_manager.remove_entity id: ent_id
+        entity_store.remove_entity id: ent_id
       end
     end
 
   end
 end
 class TimedSystem
-  def update(entity_manager, delta, input, global_events)
-    entity_manager.each_entity Timed do |rec|
+  def update(entity_store, delta, input, global_events)
+    entity_store.each_entity Timed do |rec|
       timed = rec.get(Timed)
       ent_id = rec.id
       timed.accumulated_time_in_ms += delta
@@ -711,9 +711,9 @@ class TimedSystem
 end
 
 class TimerSystem
-  def update(entity_manager, delta, input, global_events)
+  def update(entity_store, delta, input, global_events)
     current_time_ms = input.total_time
-    entity_manager.each_entity Timer do |rec|
+    entity_store.each_entity Timer do |rec|
       timer = rec.get(Timer)
       ent_id = rec.id
 
@@ -721,12 +721,12 @@ class TimerSystem
         if timer.expires_at < current_time_ms
           if timer.event
             event_comp = timer.event.is_a?(Class) ? timer.event.new : timer.event
-            entity_manager.add_component component: event_comp, id: ent_id
+            entity_store.add_component component: event_comp, id: ent_id
           end
           if timer.repeat
             timer.expires_at = current_time_ms + timer.total
           else
-            entity_manager.remove_component(klass: timer.class, id: ent_id)
+            entity_store.remove_component(klass: timer.class, id: ent_id)
           end
         end
       else
@@ -738,9 +738,9 @@ class TimerSystem
 end
 
 class InputMappingSystem
-  def update(entity_manager, dt, input, global_events)
+  def update(entity_store, dt, input, global_events)
     $window.close if input.down?(Gosu::KbEscape) || input.down?(Gosu::GpButton8)
-    # entity_manager.each_entity KeyboardControl, Controls do |rec|
+    # entity_store.each_entity KeyboardControl, Controls do |rec|
     #   keys, control = rec.components
     #   ent_id = rec.id
     #   control.move_left = input.down?(keys.move_left)
@@ -752,21 +752,21 @@ class InputMappingSystem
 end
 
 class SoundSystem
-  def update(entity_manager, dt, input, global_events)
-    entity_manager.each_entity SoundEffectEvent do |rec|
+  def update(entity_store, dt, input, global_events)
+    entity_store.each_entity SoundEffectEvent do |rec|
       ent_id = rec.id
       effect = rec.get(SoundEffectEvent)
-      entity_manager.remove_component klass: effect.class, id: ent_id
+      entity_store.remove_component klass: effect.class, id: ent_id
       Gosu::Sample.new(effect.sound_to_play).play
     end
   end
 end
 
 class PathingSystem
-  def update(entity_manager, dt, input, global_events)
-    # map = entity_manager.find(Level).first.get(Level).map
+  def update(entity_store, dt, input, global_events)
+    # map = entity_store.find(Level).first.get(Level).map
 
-    entity_manager.each_entity(Velocity, Position, Pathable) do |rec|
+    entity_store.each_entity(Velocity, Position, Pathable) do |rec|
       ent_id = rec.id
       vel, pos, pathable = rec.components
 
@@ -775,21 +775,21 @@ class PathingSystem
 end
 
 class BackgroundSystem
-  def update(entity_manager, dt, input, global_events)
-    map = entity_manager.find(Level).first.get(Level).map
+  def update(entity_store, dt, input, global_events)
+    map = entity_store.find(Level).first.get(Level).map
 
-    blobs = entity_manager.find(BackgroundBlob)
+    blobs = entity_store.find(BackgroundBlob)
     (8 - blobs.size).times do
       c = map.average_color
       x = [0 + rand(400), 1024 - rand(400)].sample
       y = [0 + rand(400), 1024 - rand(400)].sample
       color = Gosu::Color.rgba(c.red+rand(10)-5,c.green+rand(10)-5,c.blue+rand(10)-5,rand(10..70))
-      entity_manager.add_entity Position.new(x,y,0),
+      entity_store.add_entity Position.new(x,y,0),
         Boxed.new(rand(100..300),rand(100..300)), JoyColor.new(color),
         Velocity.new(x: rand(10)-5, y: rand(10)-5), BackgroundBlob.new
     end
 
-    entity_manager.each_entity(Velocity, BackgroundBlob, Position, JoyColor) do |rec|
+    entity_store.each_entity(Velocity, BackgroundBlob, Position, JoyColor) do |rec|
       ent_id = rec.id
       vel, blob, pos, color = rec.components
 
@@ -798,7 +798,7 @@ class BackgroundSystem
       pos.y += vel.y * scalar
 
       if pos.x < -500 || pos.x > 1524 || pos.y > 1524 || pos.y < -500
-        entity_manager.remove_entity id: ent_id
+        entity_store.remove_entity id: ent_id
       end
     end
   end
@@ -826,21 +826,21 @@ class RenderSystem
   end
 
 
-  def draw(target, entity_manager)
-    camera = entity_manager.find(Camera).first.components.first
+  def draw(target, entity_store)
+    camera = entity_store.find(Camera).first.components.first
 
     target.scale(camera.scale, camera.scale, camera.target_x, camera.target_y) do
 
-    entity_manager.each_entity Label, Position do |rec|
+    entity_store.each_entity Label, Position do |rec|
       label, pos = rec.components
       font = get_cached_font font: label.font, size: label.size
       font.draw(label.text, pos.x, pos.y, pos.z)
     end
 
-    monster = entity_manager.find(Monster).first
+    monster = entity_store.find(Monster).first
     monster_id = monster ? monster.id : nil
 
-    entity_manager.each_entity Position, JoyColor, Boxed do |rec|
+    entity_store.each_entity Position, JoyColor, Boxed do |rec|
       pos, color, boxed = rec.components
       ent_id = rec.id
       y_off = (boxed.squish_y_amount * boxed.squish_y_dir / 2.0)#.floor
@@ -871,7 +871,7 @@ class RenderSystem
       target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, pos.z)
     end
 
-    entity_manager.each_entity Position, JoyColor, Border do |rec|
+    entity_store.each_entity Position, JoyColor, Border do |rec|
       pos, color, border = rec.components
       c1 = c2 = c3 = c4 = color.color
       x1 = pos.x - border.width
@@ -887,7 +887,7 @@ class RenderSystem
     end
 
     # EEWWW
-    rec = entity_manager.find(Monster, Position, JoyColor, Debug).first
+    rec = entity_store.find(Monster, Position, JoyColor, Debug).first
     if rec
       mon, pos, color, d = rec.components
       c = color.color
@@ -895,7 +895,7 @@ class RenderSystem
       y = 1024
       full_h = 60
 
-      level = entity_manager.find(Level).first.get(Level)
+      level = entity_store.find(Level).first.get(Level)
       exit_color = level.map.exit_color
 
       r = Gosu::Color::RED
@@ -924,7 +924,7 @@ class RenderSystem
       target.draw_quad(x+45, y, b, x+45, y-h, b, x+55, y-h, b, x+55, y, b, 3)
     end
 
-    death_box_recs = entity_manager.find(Position, Boxed, Death)
+    death_box_recs = entity_store.find(Position, Boxed, Death)
     if death_box_recs[0]
       # all death boxes are the same size..
       pos, death_box, death = death_box_recs[0].components
@@ -947,7 +947,7 @@ class RenderSystem
         end
       end
 
-      entity_manager.each_entity(Position, Boxed, Death) do |rec|
+      entity_store.each_entity(Position, Boxed, Death) do |rec|
         pos, death_box, death = rec.components
 
         x = pos.x
