@@ -48,6 +48,13 @@ class PixelMonster < Gosu::Window
     @render_system.draw self, @entity_store
   end
 
+  def draw_box(x1,y1,x2,y2,c,z)
+    draw_line x1, y1, c, x2, y1, c, z
+    draw_line x2, y1, c, x2, y2, c, z
+    draw_line x2, y2, c, x1, y2, c, z
+    draw_line x1, y2, c, x1, y1, c, z
+  end
+
   def button_down(id)
     @input_cacher.button_down id
   end
@@ -71,7 +78,7 @@ class PixelMonster < Gosu::Window
     index = hue * @music_files.size / 360
     file_name = @music_files[index.floor]
     @music = Gosu::Song.new file_name
-    @music.volume = 0.3
+    @music.volume = 0.1
     @music.play true
   end
 

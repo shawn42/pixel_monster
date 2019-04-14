@@ -27,22 +27,41 @@ class ParticlesEmitterSystem
   SPEED = (-3..3).to_a
   POSITIONS = (-15..15).to_a
   SIZE = (1..3).to_a
+
+  USE_HELPFUL_COLORS = true
   def update(entity_store, dt, input, global_events)
     entity_store.each_entity(EmitParticlesEvent, Position) do |rec|
       ent_id = rec.id
       evt, pos = rec.components
 
-      evt.intensity.times do
-        speed = evt.speed || SPEED
-        size = evt.size || SIZE
-        new_ent = entity_store.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
-          Particle.new, JoyColor.new(evt.color),
-          Velocity.new(x: speed.sample, y: speed.sample), Boxed.new(size.sample,size.sample), EntityTarget.new(evt.target)
+      if USE_HELPFUL_COLORS
+        num_of_red_particles = (evt.color.red / 255.0 * evt.intensity).ceil
+        num_of_green_particles = (evt.color.green / 255.0 * evt.intensity).ceil
+        num_of_blue_particles = (evt.color.blue / 255.0 * evt.intensity).ceil
+        create_colored_particle(entity_store, num_of_red_particles, Gosu::Color::RED, evt, pos)
+        create_colored_particle(entity_store, num_of_green_particles, Gosu::Color::GREEN, evt, pos)
+        create_colored_particle(entity_store, num_of_blue_particles, Gosu::Color::BLUE, evt, pos)
+      else
+        create_colored_particle(entity_store, evt.intensity, evt.color, evt, pos)
       end
 
       entity_store.remove_entity id: ent_id
     end
   end
+
+  private
+
+  def create_colored_particle(entity_store, intensity, color, evt, pos)
+    intensity.times do
+      speed = evt.speed || SPEED
+      size = evt.size || SIZE
+      new_ent = entity_store.add_entity Position.new(pos.x+POSITIONS.sample, pos.y+POSITIONS.sample, 3),
+        Particle.new, JoyColor.new(color),
+        Velocity.new(x: speed.sample, y: speed.sample), Boxed.new(size.sample,size.sample), EntityTarget.new(evt.target)
+    end
+  end
+
+
 end
 
 class TimedLevelSystem
@@ -825,17 +844,20 @@ class RenderSystem
     @color_cache[color][percent] ||= c
   end
 
+  def draw_labels(entity_store)
+    entity_store.each_entity Label, Position do |rec|
+      label, pos = rec.components
+      font = get_cached_font font: label.font, size: label.size
+      font.draw(label.text, pos.x, pos.y, pos.z)
+    end
+  end
 
   def draw(target, entity_store)
     camera = entity_store.find(Camera).first.components.first
 
     target.scale(camera.scale, camera.scale, camera.target_x, camera.target_y) do
 
-    entity_store.each_entity Label, Position do |rec|
-      label, pos = rec.components
-      font = get_cached_font font: label.font, size: label.size
-      font.draw(label.text, pos.x, pos.y, pos.z)
-    end
+      draw_labels entity_store
 
     monster = entity_store.find(Monster).first
     monster_id = monster ? monster.id : nil
@@ -892,8 +914,12 @@ class RenderSystem
       mon, pos, color, d = rec.components
       c = color.color
       x = 20
-      y = 1024
+      y = 1024-10
       full_h = 60
+      z = 3
+
+      bg_color = Gosu::Color.rgba(255,255,255,40)
+      target.draw_rect( x-5, y-full_h-10, 60+10, full_h+10, bg_color, z)
 
       level = entity_store.find(Level).first.get(Level)
       exit_color = level.map.exit_color
@@ -901,27 +927,26 @@ class RenderSystem
       r = Gosu::Color::RED
       g = Gosu::Color::GREEN
       b = Gosu::Color::BLUE
-      rr = fade(r, percent: 50)
-      gg = fade(g, percent: 50)
-      bb = fade(b, percent: 50)
+      rr = fade(r, percent: 20)
+      gg = fade(g, percent: 20)
+      bb = fade(b, percent: 20)
 
       h = (exit_color.red / 255.0 * full_h + 1).round
-      target.draw_quad(x, y, rr, x, y-h, rr, x+20, y-h, rr, x+20, y, rr, 3)
-
+      target.draw_quad(x, y, rr, x, y-h, rr, x+20, y-h, rr, x+20, y, rr, z)
       h = (c.red / 255.0 * full_h).round
-      target.draw_quad(x+5, y, r, x+5, y-h, r, x+15, y-h, r, x+15, y, r, 3)
+      target.draw_quad(x+5, y, r, x+5, y-h, r, x+15, y-h, r, x+15, y, r, z)
 
       h = (exit_color.green / 255.0 * full_h + 1).round
-      target.draw_quad(x+20, y, gg, x+20, y-h, gg, x+40, y-h, gg, x+40, y, gg, 3)
-
+      target.draw_quad(x+20, y, gg, x+20, y-h, gg, x+40, y-h, gg, x+40, y, gg, z)
       h = (c.green / 255.0 * full_h).round
-      target.draw_quad(x+25, y, g, x+25, y-h, g, x+35, y-h, g, x+35, y, g, 3)
+      target.draw_quad(x+25, y, g, x+25, y-h, g, x+35, y-h, g, x+35, y, g, z)
 
       h = (exit_color.blue / 255.0 * full_h + 1).round
-      target.draw_quad(x+40, y, bb, x+40, y-h, bb, x+60, y-h, bb, x+60, y, bb, 3)
-
+      target.draw_quad(x+40, y, bb, x+40, y-h, bb, x+60, y-h, bb, x+60, y, bb, z)
       h = (c.blue / 255.0 * full_h).round
-      target.draw_quad(x+45, y, b, x+45, y-h, b, x+55, y-h, b, x+55, y, b, 3)
+      target.draw_quad(x+45, y, b, x+45, y-h, b, x+55, y-h, b, x+55, y, b, z)
+
+      target.draw_box( x-5, y-full_h-10, x-5+60+10, y, Gosu::Color::WHITE, z)
     end
 
     death_box_recs = entity_store.find(Position, Boxed, Death)

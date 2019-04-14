@@ -1,4 +1,3 @@
-require 'chunky_png'
 require_relative 'vec'
 require_relative 'tiles'
 require_relative 'movable_tile_path'
@@ -37,21 +36,24 @@ class Level
   START_COLOR = Gosu::Color::WHITE
   EXIT_COLOR = Gosu::Color::BLACK
   MAX_ALPHA = 255
-  attr_accessor :map, :complete, :last_ms_to_complete, :best_ms_to_complete
+  attr_accessor :complete, :last_ms_to_complete, :best_ms_to_complete
+  attr_writer :map
+
   def self.load(file_name:, number:, high_scores: )
     level = Level.new
     map = level.map
     level.best_ms_to_complete = high_scores.best(number: number)
-
-    png = ChunkyPNG::Image.from_file File.join('levels',file_name)
+    png = Gosu::Image.new File.join('levels', file_name)
     load_level_meta(level, png)
 
     colors = []
     png.width.times do |c|
       (png.height-1).times do |r|
-        v = png[c,r+1]
-        unless v == 0
-          gosu_color = gosu_color_from_value v
+        # v = png[c,r+1]
+        gosu_color = png.get_pixel(c,r+1)
+
+        # unless v == 0
+        unless gosu_color.alpha == 0
 
           if gosu_color.alpha == MAX_ALPHA
             special_color = gosu_color.abgr
@@ -108,7 +110,7 @@ class Level
         loc = active_node + n_vec
         color = nil
         if (0...32).include?(loc.x) and (0...32).include?(loc.y)
-          color = gosu_color_from_value png[loc.x,loc.y+1]
+          color = png.get_pixel(loc.x, loc.y+1)
         end
 
         if color && !path_locs.include?(loc)
@@ -123,23 +125,23 @@ class Level
 
   def self.load_level_meta(level, png)
     map = level.map
-    map.exit_color = gosu_color_from_value png[0,0]
+    map.exit_color = png.get_pixel(0,0)#Wgosu_color_from_value png[0,0]
 
     command = nil
     (1..png.width-1).each do |c|
-      a = ChunkyPNG::Color.a(png[c,0])
+      a = png.get_pixel(c, 0).alpha
       if command.nil? && a > 0
-        command = [gosu_color_from_value(png[c,0])]
+        command = [png.get_pixel(c,0)]
       elsif command && a == 0
         begin
         process_command(level, command)
-        rescue Exception => ex
+        rescue => ex
           puts 'failed to process command'
           puts ex.inspect
         end
         command = nil
       elsif a > 0
-        command << gosu_color_from_value(png[c,0])
+        command << png.get_pixel(c, 0)
       end
     end
   end
@@ -163,14 +165,6 @@ class Level
     else
       puts "unknown command #{command}"
     end
-  end
-
-  def self.gosu_color_from_value(v)
-    Gosu::Color.rgba(
-      ChunkyPNG::Color.r(v),
-      ChunkyPNG::Color.g(v),
-      ChunkyPNG::Color.b(v),
-      ChunkyPNG::Color.a(v))
   end
 
   def map
