@@ -25,6 +25,9 @@ module Prefab
         when BlackHoleTile
           eid = black_hole(entity_store: entity_store, tile_def: tile_def,
                       x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
+        when GhostTile
+          eid = ghost_tile(entity_store: entity_store, tile_def: tile_def,
+                      x: c * TILE_WIDTH+16, y: r*TILE_WIDTH+16 )
         when BouncyTile
           eid = bouncy_tile(entity_store: entity_store, tile_def: tile_def, tile_x: c, tile_y: r, color: Color::GRAY)
         when DeathTile
@@ -99,8 +102,12 @@ module Prefab
   end
 
   def self.black_hole(entity_store:,tile_def:,x:,y:)
-      subtract_color = tile_def.subtract_color
-      entity_store.add_entity BlackHole.new, Position.new(x, y), Boxed.new(14,14), JoyColor.new(Gosu::Color.rgba(30,30,30,255)), ColorSink.new(subtract_color)
+    subtract_color = tile_def.subtract_color
+    entity_store.add_entity BlackHole.new, Position.new(x, y), Boxed.new(14,14), JoyColor.new(Gosu::Color.rgba(30,30,30,255)), ColorSink.new(subtract_color)
+  end
+  def self.ghost_tile(entity_store:,tile_def:,x:,y:)
+    color = tile_def.color
+    entity_store.add_entity GhostTile.new, Position.new(x, y), Boxed.new(14,14), JoyColor.new(color), ColorSource.new
   end
   def self.bouncy_tile(entity_store:,tile_def:, tile_x:,tile_y:, color:)
       x = tile_x * TILE_WIDTH + 16

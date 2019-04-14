@@ -208,7 +208,6 @@ class MonsterSystem
       vel.y += 0.75
     end
 
-
     if vel.x > MAX_VEL
       vel.x = MAX_VEL
     elsif vel.x < -MAX_VEL
@@ -341,6 +340,25 @@ class MonsterSystem
       end
     end
 
+    # TODO: create a system that tracks all tiles that are 
+    #       touching the monster to reuse these distance calcs
+    entity_store.each_entity(ColorSource, Position, JoyColor, Boxed, GhostTile) do |rec|
+      src_id = rec.id
+      src, pos, source_color, box, border, movable = rec.components
+      sc = source_color.color
+
+      x_off = pos.x - monster_pos.x
+      y_off = pos.y - monster_pos.y
+      dist = x_off*x_off+y_off*y_off
+
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+        entity_store.remove_entity id: src_id
+
+        entity_store.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
+        entity_store.add_entity SoundEffectEvent.new(COLLECT)
+      end
+    end 
+
     entity_store.each_entity(ColorSource, Position, JoyColor, Boxed) do |rec|
       src_id = rec.id
       src, pos, source_color, box = rec.components
@@ -383,12 +401,12 @@ class MonsterSystem
         entity_store.add_component( id:eid, component: movable )
       else
         # TODO make this more of a pulse effect
-        change = (-2..2).to_a.sample
+        change = (-2..3).to_a.sample
         border.width = clamp(border.width + change, 14..18)
         border.height = clamp(border.height + change, 14..18)
       end
-    end
-
+    end 
+ 
     entity_store.each_entity(SuperColorSource, Position, JoyColor, Boxed, Border) do |rec|
       src_id = rec.id
       src, pos, source_color, box, border = rec.components
@@ -683,6 +701,23 @@ class RainbowSystem
       rainbow.color_index = (rainbow.color_index + 1) % rainbow.colors.size
       color.color = rainbow.colors[rainbow.color_index]
       entity_store.remove_component klass: ChangeColorEvent, id: rainbow_id
+    end
+  end
+end
+
+class FadingSystem
+  ALPHA_RANGE = 50...255
+  FADE_SPEED = 0.0001
+
+  def update(entity_store, dt, input, global_events)
+    entity_store.each_entity(GhostTile, JoyColor) do |rec|
+      _, color = rec.components
+      old_c = color.color
+      alpha_dt = [dt * FADE_SPEED * 255, 1].max
+      alpha = old_c.alpha - alpha_dt.round
+      alpha = ALPHA_RANGE.max - (ALPHA_RANGE.min-alpha) if alpha < ALPHA_RANGE.min
+      c = Gosu::Color.rgba(old_c.red, old_c.green, old_c.blue, alpha)
+      color.color = c
     end
   end
 end

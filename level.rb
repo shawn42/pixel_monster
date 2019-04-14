@@ -49,12 +49,9 @@ class Level
     colors = []
     png.width.times do |c|
       (png.height-1).times do |r|
-        # v = png[c,r+1]
         gosu_color = png.get_pixel(c,r+1)
 
-        # unless v == 0
-        unless gosu_color.alpha == 0
-
+        unless gosu_color == Gosu::Color::NONE
           if gosu_color.alpha == MAX_ALPHA
             special_color = gosu_color.abgr
             special = map.special_tile_defs[special_color]
@@ -125,7 +122,7 @@ class Level
 
   def self.load_level_meta(level, png)
     map = level.map
-    map.exit_color = png.get_pixel(0,0)#Wgosu_color_from_value png[0,0]
+    map.exit_color = png.get_pixel(0, 0)
 
     command = nil
     (1..png.width-1).each do |c|
@@ -153,6 +150,7 @@ class Level
     Gosu::Color::BLUE => BouncyTile,
     Gosu::Color::RED => DeathTile,
     Gosu::Color::GRAY => EmptyTile,
+    Gosu::Color::CYAN => GhostTile,
   }
 
   def self.process_command(level, command)

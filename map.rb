@@ -20,7 +20,8 @@ class Map
   end
 
   def blocked?(world_x, world_y)
-    @tiles[world_x / TILE_SIZE][world_y / TILE_SIZE]
+    tile = @tiles[world_x / TILE_SIZE][world_y / TILE_SIZE]
+    tile && tile.blocking?
   end
   alias at blocked?
 

@@ -120,6 +120,7 @@ class PixelMonster < Gosu::Window
       CameraSystem.new,
       MonsterSystem.new,
       RainbowSystem.new,
+      FadingSystem.new,
       TimerSystem.new,
       TimedSystem.new,
       TimedLevelSystem.new,
