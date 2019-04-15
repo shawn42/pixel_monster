@@ -34,13 +34,6 @@ class Scoreboard
       @scores[number] ||= {}
       @scores[number][:time] = new_time
     end
-    puts "completed level #{number} with #{level.last_ms_to_complete}"
-    puts "SCORES:"
-    @scores.keys.sort.each do |level|
-      data = @scores[level]
-      puts "#{level}: #{data[:time]/1000}s"
-    end
-
     write_to_file
   end
 end

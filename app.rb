@@ -1,13 +1,15 @@
 require 'gosu'
 require 'game_ecs'
 require 'awesome_print'
+require 'fileutils'
 # require 'pry'
 
+require_relative 'core_ext'
 require_relative 'gosu_ext'
 require_relative 'vec'
 require_relative 'components'
 require_relative 'prefab'
-require_relative 'systems'
+require_relative 'systems/systems.rb'
 require_relative 'world'
 require_relative 'input_cacher'
 require_relative 'level'
@@ -19,7 +21,17 @@ class PixelMonster < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
   def initialize
     super(1024,1024,false)
-    @level_number = (ARGV[0] || 1).to_i - 1
+    level_arg = ARGV[0] || "1"
+    if level_arg.start_with? "http"
+      level_name = level_arg.split('/').last
+      require 'open-uri'
+
+      FileUtils.mkdir_p 'custom_levels'
+      @custom_level = File.join('custom_levels', "#{level_name}")
+      IO.copy_stream(open(level_arg), @custom_level)
+    else
+      @level_number = level_arg.to_i - 1
+    end
     @num_levels = Dir['./levels/level*.png'].size
     @music_files = Dir['./music/*.mp3']
     @input_cacher = InputCacher.new
@@ -66,11 +78,16 @@ class PixelMonster < Gosu::Window
 
   def next_level
     @music.stop if @music
-    @level_number = @level_number += 1
 
-    @level_number = 1 if @level_number > @num_levels
+    if @custom_level.nil?
+      @level_number = @level_number += 1
+      @level_number = 1 if @level_number > @num_levels
+      @filename = File.join('levels', "level#{@level_number}.png")
+    else
+      @level_number = :custom
+      @filename = @custom_level
+    end
 
-    @filename = "level#{@level_number}.png"
     reset_level
 
     avg_rgb = @level.map.average_color
@@ -141,6 +158,7 @@ class PixelMonster < Gosu::Window
   end
 
   def update_scoreboard!
+    # TODO track scoreboard..
     @scoreboard.completed_level level: @level, number: @level_number
   end
 

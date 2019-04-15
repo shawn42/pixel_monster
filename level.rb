@@ -43,7 +43,7 @@ class Level
     level = Level.new
     map = level.map
     level.best_ms_to_complete = high_scores.best(number: number)
-    png = Gosu::Image.new File.join('levels', file_name)
+    png = Gosu::Image.new file_name
     load_level_meta(level, png)
 
     colors = []
