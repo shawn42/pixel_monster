@@ -20,10 +20,13 @@ class Map
   end
 
   def blocked?(world_x, world_y)
-    tile = @tiles[world_x / TILE_SIZE][world_y / TILE_SIZE]
+    tile = at world_x, world_y
     tile && tile.blocking?
   end
-  alias at blocked?
+
+  def at(world_x, world_y)
+    @tiles[world_x / TILE_SIZE][world_y / TILE_SIZE]
+  end
 
   def in_exit?(world_x, world_y)
     x = world_x / TILE_SIZE
