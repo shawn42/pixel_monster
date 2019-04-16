@@ -152,18 +152,17 @@ class PixelMonster < Gosu::Window
   def update_level!
     if @level.complete?
       update_scoreboard!
-      next_level 
+      next_level
     end
     reset_level if @level.failed?
   end
 
   def update_scoreboard!
-    # TODO track scoreboard..
     @scoreboard.completed_level level: @level, number: @level_number
   end
 
   def relative_delta
-    total_millis = Gosu::milliseconds.to_f
+    total_millis = Gosu.milliseconds.to_f
     delta = total_millis
     delta -= @last_millis if total_millis > @last_millis
     @last_millis = total_millis
@@ -172,7 +171,7 @@ class PixelMonster < Gosu::Window
   end
 
   def take_input_snapshot
-    total_millis = Gosu::milliseconds.to_f
+    total_millis = Gosu.milliseconds.to_f
 
     mouse_pos = {x: mouse_x, y: mouse_y}
     input_snapshot = @input_cacher.snapshot @last_snapshot, total_millis, mouse_pos

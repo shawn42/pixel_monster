@@ -36,7 +36,7 @@ class Level
   START_COLOR = Gosu::Color::WHITE
   EXIT_COLOR = Gosu::Color::BLACK
   MAX_ALPHA = 255
-  attr_accessor :complete, :last_ms_to_complete, :best_ms_to_complete
+  attr_accessor :complete, :last_ms_to_complete, :best_ms_to_complete, :width, :height
   attr_writer :map
 
   def self.load(file_name:, number:, high_scores: )
@@ -45,10 +45,12 @@ class Level
     level.best_ms_to_complete = high_scores.best(number: number)
     png = Gosu::Image.new file_name
     load_level_meta(level, png)
+    level.width = png.width
+    level.height = png.height - 1
 
     colors = []
-    png.width.times do |c|
-      (png.height-1).times do |r|
+    level.width.times do |c|
+      level.height.times do |r|
         gosu_color = png.get_pixel(c,r+1)
 
         unless gosu_color == Gosu::Color::NONE
