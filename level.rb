@@ -112,7 +112,7 @@ class Level
           color = png.get_pixel(loc.x, loc.y+1)
         end
 
-        if color.alpha > 0 && !path_locs.include?(loc)
+        if color && color.alpha > 0 && !path_locs.include?(loc)
           open_list << loc if color_close_enough? color, path_color
         end
       end
