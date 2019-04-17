@@ -108,11 +108,11 @@ class Level
       Vec::NEIGHBOR_VECS.map do |n_vec|
         loc = active_node + n_vec
         color = nil
-        if (0...32).include?(loc.x) and (0...32).include?(loc.y)
+        if (0...32).include?(loc.x) && (0...32).include?(loc.y)
           color = png.get_pixel(loc.x, loc.y+1)
         end
 
-        if color && !path_locs.include?(loc)
+        if color.alpha > 0 && !path_locs.include?(loc)
           open_list << loc if color_close_enough? color, path_color
         end
       end
