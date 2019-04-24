@@ -99,17 +99,23 @@ class RenderSystem
         map_width_pixels_needed > WINDOW_WIDTH
         w_scale = WINDOW_WIDTH.to_f / map_width_pixels_needed
         h_scale = WINDOW_HEIGHT.to_f / map_height_pixels_needed
-        # x_scale = y_scale = w_scale < h_scale ? w_scale : h_scale
-        x_scale = y_scale = h_scale < w_scale ? w_scale : h_scale
+        if h_scale < w_scale
+          x_scale = y_scale = h_scale
+          x_offset = map_width_pixels_needed.to_f / w_scale / 2.0
+        else
+          x_scale = y_scale = w_scale
+          y_offset = map_height_pixels_needed.to_f / h_scale / 2.0
+        end
+      else
+        x_offset = WINDOW_WIDTH / 2 - cam_pos.x
+        y_offset = WINDOW_HEIGHT / 2 - cam_pos.y
       end
 
-      x_offset = WINDOW_WIDTH / 2 - cam_pos.x
-      y_offset = WINDOW_HEIGHT / 2 - cam_pos.y
     end
 
     around_x = around_y = 0
-    target.translate(x_offset, y_offset) do
-      target.scale(x_scale, y_scale, around_x, around_y) do
+    target.scale(x_scale, y_scale, around_x, around_y) do
+      target.translate(x_offset, y_offset) do
       draw_labels entity_store
 
     entity_store.each_entity Position, JoyColor, Boxed do |rec|
