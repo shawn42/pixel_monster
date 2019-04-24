@@ -1,5 +1,7 @@
 allow larger than 32x32 maps
+outline entire map in no-op but visible tiles
 README especially for creating your own maps
+
 clean up collision checking.. have collision system that sends "touching tiles" component?
 clean up: all systems in own file
 add teleport sound on edge warp (add visual effect too?)
