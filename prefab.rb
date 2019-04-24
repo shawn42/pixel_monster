@@ -4,7 +4,8 @@ module Prefab
 
   TILE_WIDTH = 32
   def self.camera(entity_store:, x:, y:, scale:)
-    entity_store.add_entity Camera.new(scale: scale, x: x, y: y)
+    monster = entity_store.first(Monster) 
+    entity_store.add_entity Camera.new(target_id: monster.id, scale: scale), Position.new(x, y)
   end
 
   def self.level(entity_store:,level:)

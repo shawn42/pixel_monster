@@ -1,5 +1,12 @@
-additional music, can be dynamically generated?!!
 allow larger than 32x32 maps
+README especially for creating your own maps
+clean up collision checking.. have collision system that sends "touching tiles" component?
+clean up: all systems in own file
+add teleport sound on edge warp (add visual effect too?)
+
+add pause?
+
+additional music, can be dynamically generated?!!
 allow continuation of command blocks (last block binary for "next line"?)
 
 coop mode?  power ups?  

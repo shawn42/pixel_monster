@@ -24,25 +24,93 @@ class RenderSystem
     entity_store.each_entity Label, Position do |rec|
       label, pos = rec.components
       font = get_cached_font font: label.font, size: label.size
-      font.draw(label.text, pos.x, pos.y, pos.z)
+      font.draw_markup(label.text, pos.x, pos.y, pos.z)
     end
   end
 
+  def draw_color_helper_hud(hud_rec, map, target)
+    if hud_rec
+
+      mon, pos, color, d = hud_rec.components
+      c = color.color
+      x = 20
+      y = 1024-10
+      full_h = 60
+      z = 3
+      exit_color = map.exit_color
+
+      bg_color = Gosu::Color.rgba(255,255,255,40)
+      target.draw_rect( x-5, y-full_h-10, 60+10, full_h+10, bg_color, z)
+
+
+      r = Gosu::Color::RED
+      g = Gosu::Color::GREEN
+      b = Gosu::Color::BLUE
+      rr = fade(r, percent: 20)
+      gg = fade(g, percent: 20)
+      bb = fade(b, percent: 20)
+
+      h = (exit_color.red / 255.0 * full_h + 1).round
+      target.draw_quad(x, y, rr, x, y-h, rr, x+20, y-h, rr, x+20, y, rr, z)
+      h = (c.red / 255.0 * full_h).round
+      target.draw_quad(x+5, y, r, x+5, y-h, r, x+15, y-h, r, x+15, y, r, z)
+
+      h = (exit_color.green / 255.0 * full_h + 1).round
+      target.draw_quad(x+20, y, gg, x+20, y-h, gg, x+40, y-h, gg, x+40, y, gg, z)
+      h = (c.green / 255.0 * full_h).round
+      target.draw_quad(x+25, y, g, x+25, y-h, g, x+35, y-h, g, x+35, y, g, z)
+
+      h = (exit_color.blue / 255.0 * full_h + 1).round
+      target.draw_quad(x+40, y, bb, x+40, y-h, bb, x+60, y-h, bb, x+60, y, bb, z)
+      h = (c.blue / 255.0 * full_h).round
+      target.draw_quad(x+45, y, b, x+45, y-h, b, x+55, y-h, b, x+55, y, b, z)
+
+      target.draw_box( x-5, y-full_h-10, x-5+60+10, y, Gosu::Color::WHITE, z)
+    end
+
+  end
+
+  TILE_WIDTH = 32
+  WINDOW_WIDTH = WINDOW_HEIGHT = 1024
+
   def draw(target, entity_store)
     # ignore for now, this is for zooming in on exit when first triggered
-    # camera = entity_store.find(Camera).first.components.first
-    # target.scale(camera.scale, camera.scale, camera.target_x, camera.target_y) do
+    camera = entity_store.first(Camera, Position)
+    cam, cam_pos = camera.components
 
-    # TODO calc this from level
-    # TODO update render locations of UI elements for total w/h
+    # TODO update render locs and sizes of UI elements for total w/h
+
+    level = entity_store.first(Level).get(Level)
+    map = level.map
+
+    map_width_pixels_needed = level.width * TILE_WIDTH
+    map_height_pixels_needed = level.height * TILE_WIDTH
     x_scale = y_scale = 1
-    around_x = around_y = 0
-    target.scale(x_scale, y_scale, around_x, around_y) do
+    x_offset = y_offset = 0
 
-      draw_labels entity_store
-
-    monster = entity_store.find(Monster).first
+    monster = entity_store.find(Monster, Position).first
     monster_id = monster ? monster.id : nil
+    monster_pos = monster&.components&.first
+
+    y_offset = x_offset = 0
+
+    if cam.mode == Camera::AUTOFIT
+      if map_height_pixels_needed > WINDOW_HEIGHT ||
+        map_width_pixels_needed > WINDOW_WIDTH
+        w_scale = WINDOW_WIDTH.to_f / map_width_pixels_needed
+        h_scale = WINDOW_HEIGHT.to_f / map_height_pixels_needed
+        # x_scale = y_scale = w_scale < h_scale ? w_scale : h_scale
+        x_scale = y_scale = h_scale < w_scale ? w_scale : h_scale
+      end
+
+      x_offset = WINDOW_WIDTH / 2 - cam_pos.x
+      y_offset = WINDOW_HEIGHT / 2 - cam_pos.y
+    end
+
+    around_x = around_y = 0
+    target.translate(x_offset, y_offset) do
+      target.scale(x_scale, y_scale, around_x, around_y) do
+      draw_labels entity_store
 
     entity_store.each_entity Position, JoyColor, Boxed do |rec|
       pos, color, boxed = rec.components
@@ -90,46 +158,9 @@ class RenderSystem
       target.draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, pos.z)
     end
 
-    # EEWWW
-    rec = entity_store.find(Monster, Position, JoyColor, Debug).first
-    if rec
-      mon, pos, color, d = rec.components
-      c = color.color
-      x = 20
-      y = 1024-10
-      full_h = 60
-      z = 3
+    hud = entity_store.find(Monster, Position, JoyColor, Debug).first
 
-      bg_color = Gosu::Color.rgba(255,255,255,40)
-      target.draw_rect( x-5, y-full_h-10, 60+10, full_h+10, bg_color, z)
-
-      level = entity_store.find(Level).first.get(Level)
-      exit_color = level.map.exit_color
-
-      r = Gosu::Color::RED
-      g = Gosu::Color::GREEN
-      b = Gosu::Color::BLUE
-      rr = fade(r, percent: 20)
-      gg = fade(g, percent: 20)
-      bb = fade(b, percent: 20)
-
-      h = (exit_color.red / 255.0 * full_h + 1).round
-      target.draw_quad(x, y, rr, x, y-h, rr, x+20, y-h, rr, x+20, y, rr, z)
-      h = (c.red / 255.0 * full_h).round
-      target.draw_quad(x+5, y, r, x+5, y-h, r, x+15, y-h, r, x+15, y, r, z)
-
-      h = (exit_color.green / 255.0 * full_h + 1).round
-      target.draw_quad(x+20, y, gg, x+20, y-h, gg, x+40, y-h, gg, x+40, y, gg, z)
-      h = (c.green / 255.0 * full_h).round
-      target.draw_quad(x+25, y, g, x+25, y-h, g, x+35, y-h, g, x+35, y, g, z)
-
-      h = (exit_color.blue / 255.0 * full_h + 1).round
-      target.draw_quad(x+40, y, bb, x+40, y-h, bb, x+60, y-h, bb, x+60, y, bb, z)
-      h = (c.blue / 255.0 * full_h).round
-      target.draw_quad(x+45, y, b, x+45, y-h, b, x+55, y-h, b, x+55, y, b, z)
-
-      target.draw_box( x-5, y-full_h-10, x-5+60+10, y, Gosu::Color::WHITE, z)
-    end
+    draw_color_helper_hud hud, map, target
 
     death_box_recs = entity_store.find(Position, Boxed, Death)
     if death_box_recs[0]
@@ -164,7 +195,7 @@ class RenderSystem
       end
     end
 
-    # end
+    end
     end
   end
 end

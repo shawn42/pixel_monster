@@ -11,7 +11,7 @@ class Particle; end
 
 class EmitParticlesEvent
   attr_accessor :color, :target, :intensity, :speed, :size
-  def initialize(color:, target:nil, intensity: 25, speed: nil, size: nil)
+  def initialize(color:, target:nil, intensity: 5, speed: nil, size: nil)
     @color = color
     @target = target
     @intensity = intensity
@@ -65,14 +65,18 @@ class PlatformPosition
 end
 
 class Camera
-  attr_accessor :x, :y, :scale, :target_x, :target_y
-  def initialize(x:,y:,scale:1)
-    @x = x
-    @y = y
-    @target_x = @x
-    @target_y = @y
+  attr_accessor :scale, :target_id, :mode
+  MODES = [
+    AUTOFIT = :autofit,
+    FREE = :free
+  ]
+
+  def initialize(target_id:,scale:1, mode: AUTOFIT)
     @scale = scale
+    @target_id = target_id
+    @mode = mode
   end
+
 end
 class ZoomCameraOperation
   attr_accessor :scale, :duration, :ttl, :target_scale, :target_x, :target_y
