@@ -1,4 +1,3 @@
-allow larger than 32x32 maps
 outline entire map in no-op but visible tiles
 README especially for creating your own maps
 
@@ -30,8 +29,13 @@ builds
 
 
 BUGS
+ - make monster system respect dt in all cases (allowing for varying of update freq)
  - sometimes not killed my landing on a glitch tile (only seen when block is going up) (system ordering issue?) (do we set the player velocity to the tiles vel?)
  - riding on bouncy tile does not always let you super bounce
  - clean up duplicate code for color source consumption
  - end of level time / stars
  - start timer once player moves
+
+DONE
+allow larger than 32x32 maps
+level to show off / teach ghost tiles

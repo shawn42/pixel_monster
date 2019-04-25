@@ -19,8 +19,10 @@ require_relative 'scoreboard'
 Q = GameEcs::Query
 class PixelMonster < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
+  # UPDATE_INTERVAL = 6.0
   def initialize
     super(1024,1024,false)
+    # self.update_interval = UPDATE_INTERVAL
     level_arg = ARGV[0] || "1"
     if level_arg.start_with? "http"
       level_name = level_arg.split('/').last

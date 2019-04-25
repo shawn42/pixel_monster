@@ -101,10 +101,10 @@ class RenderSystem
         h_scale = WINDOW_HEIGHT.to_f / map_height_pixels_needed
         if h_scale < w_scale
           x_scale = y_scale = h_scale
-          x_offset = map_width_pixels_needed.to_f / w_scale / 2.0
+          x_offset = (map_width_pixels_needed.to_f / h_scale - WINDOW_WIDTH) / 2
         else
           x_scale = y_scale = w_scale
-          y_offset = map_height_pixels_needed.to_f / h_scale / 2.0
+          y_offset = (map_height_pixels_needed.to_f / w_scale - WINDOW_HEIGHT) / 2
         end
       else
         x_offset = WINDOW_WIDTH / 2 - cam_pos.x

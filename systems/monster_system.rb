@@ -37,6 +37,7 @@ class MonsterSystem
       death_at(entity_store, monster_pos.x, monster_pos.y, monster_color.color)
     end
 
+    # TODO adjust this based on map size.. LUL
     if monster_pos.y > 1100
       death_at(entity_store, monster_pos.x, monster_pos.y-100, monster_color.color)
     end
@@ -132,6 +133,7 @@ class MonsterSystem
         vel.y = -monster_platform.last_jump * 0.5 if vel.y < -monster_platform.last_jump * 0.5
       end
     elsif input.total_time - monster_platform.last_grounded_at > RUN_FORGIVENESS
+      # apply gravity
       vel.y += 0.75
     end
 
@@ -280,6 +282,10 @@ class MonsterSystem
       dist = x_off*x_off+y_off*y_off
 
       if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+        weight = sc.alpha / 255.0 * 0.15
+        blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: weight)
+        monster_color.color = blended_color
+
         entity_store.remove_entity id: src_id
 
         entity_store.add_entity pos, EmitParticlesEvent.new(color: sc, target: monster_rec.id)
