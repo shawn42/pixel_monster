@@ -10,9 +10,11 @@ class ParticlesEmitterSystem
       evt, pos = rec.components
 
       if USE_HELPFUL_COLORS
-        num_of_red_particles = (evt.color.red / 255.0 * evt.intensity).ceil
-        num_of_green_particles = (evt.color.green / 255.0 * evt.intensity).ceil
-        num_of_blue_particles = (evt.color.blue / 255.0 * evt.intensity).ceil
+        c = evt.color
+        total = (c.red + c.green + c.blue).to_f
+        num_of_red_particles = c.red > 0 ? (evt.intensity * c.red.to_f / total).round : 0
+        num_of_green_particles = c.green > 0 ? (evt.intensity * c.green.to_f / total).round : 0
+        num_of_blue_particles = c.blue > 0 ? (evt.intensity * c.blue.to_f / total).round : 0
         create_colored_particle(entity_store, num_of_red_particles, Gosu::Color::RED, evt, pos)
         create_colored_particle(entity_store, num_of_green_particles, Gosu::Color::GREEN, evt, pos)
         create_colored_particle(entity_store, num_of_blue_particles, Gosu::Color::BLUE, evt, pos)

@@ -76,8 +76,8 @@ module Prefab
   end
 
   def self.monster_exit(entity_store:,x:,y:,color:)
-      entity_store.add_entity Exit.new, JoyColor.new(color), Position.new(x, y), Boxed.new(14,14)
-      entity_store.add_entity Exit.new, JoyColor.new(Color::BLACK), Position.new(x, y), Boxed.new(8,8)
+      entity_store.add_entity Exit.new, JoyColor.new(color), Position.new(x, y, 10), Boxed.new(14,14)
+      entity_store.add_entity Exit.new, JoyColor.new(Color::BLACK), Position.new(x, y, 10), Boxed.new(8,8)
 
 
       # TODO how to pause game while this is happening?
@@ -126,7 +126,7 @@ module Prefab
   def self.monster(entity_store:,x:,y:,color:)
 
     entity_store.add_entity Monster.new, JoyColor.new(color), Boxed.new(13, 13),
-      Position.new(x, y), Velocity.new, PlatformPosition.new, Debug.new
+      Position.new(x, y, 11), Velocity.new, PlatformPosition.new, Debug.new
 
   end
 
