@@ -31,6 +31,10 @@ class Vec
     "Vec: [#{x},#{y}]"
   end
 
+  def to_vec
+    self
+  end
+
   alias_method :inspect, :to_s
 
   def ==(other)

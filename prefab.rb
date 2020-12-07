@@ -43,7 +43,6 @@ module Prefab
           raise "unkown special tile #{special}"
         end
 
-
         if eid && tile_def.path
           to_delete << vec(c,r)
           map.tiles[c].delete r
@@ -104,7 +103,7 @@ module Prefab
 
   def self.black_hole(entity_store:,tile_def:,x:,y:)
     subtract_color = tile_def.subtract_color
-    entity_store.add_entity BlackHole.new, Position.new(x, y), Boxed.new(14,14), JoyColor.new(Gosu::Color.rgba(30,30,30,255)), ColorSink.new(subtract_color)
+    entity_store.add_entity BlackHole.new, Position.new(x, y), Boxed.new(16,16), JoyColor.new(Gosu::Color.rgba(30,30,30,255)), ColorSink.new(subtract_color)
   end
   def self.ghost_tile(entity_store:,tile_def:,x:,y:)
     color = tile_def.color
@@ -124,10 +123,8 @@ module Prefab
   end
 
   def self.monster(entity_store:,x:,y:,color:)
-
-    entity_store.add_entity Monster.new, JoyColor.new(color), Boxed.new(13, 13),
+    entity_store.add_entity Monster.new, JoyColor.new(color), Boxed.new(14, 14),
       Position.new(x, y, 11), Velocity.new, PlatformPosition.new, Debug.new
-
   end
 
 end

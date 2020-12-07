@@ -33,7 +33,7 @@ class MovableTile
   attr_accessor :path, :vel, :world_target, :dir_vec, :path_target
   def initialize(path:, start_node:, dir_vec:)
     @path = path
-    @vel = vec(0,0)
+    @vel = vec(0, 0)
     @path_target = start_node
     @dir_vec = dir_vec
   end
@@ -134,6 +134,13 @@ class Boxed
     @squish_width = 0
     @squish_x_amount = 0
     @squish_x_dir = 0
+  end
+
+  def h
+    @height
+  end
+  def w
+    @width
   end
 end
 

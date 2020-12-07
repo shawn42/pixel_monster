@@ -9,7 +9,7 @@ require_relative 'gosu_ext'
 require_relative 'vec'
 require_relative 'components'
 require_relative 'prefab'
-require_relative 'systems/systems.rb'
+require_relative 'systems/systems'
 require_relative 'world'
 require_relative 'input_cacher'
 require_relative 'level'
@@ -176,7 +176,7 @@ class PixelMonster < Gosu::Window
     total_millis = Gosu.milliseconds.to_f
 
     mouse_pos = {x: mouse_x, y: mouse_y}
-    input_snapshot = @input_cacher.snapshot @last_snapshot, total_millis, mouse_pos
+      input_snapshot = @input_cacher.snapshot @last_snapshot, total_millis, mouse_pos
     @last_snapshot = input_snapshot
     input_snapshot
   end

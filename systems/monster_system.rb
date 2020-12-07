@@ -6,9 +6,10 @@ class MonsterSystem
   PEAK_DURATION = SQUISH_DURATION / 4.0 #ms
   JUMP_HEIGHT = 15
   SUPER_JUMP_HEIGHT = 25
+  GRAVITY_PER_TICK = 0.75
 
   MAX_VEL = 15
-  MIN_DIST = 44
+  MIN_DIST = 80
   MIN_DIST_SQUARED = MIN_DIST * MIN_DIST
   JUMPS = ['sounds/jump1.wav','sounds/jump2.wav']
   COLLECT = 'sounds/collect.wav'
@@ -21,7 +22,7 @@ class MonsterSystem
     map = level.map
 
     if entity_store.find(DyingEvent).first
-      level.failed! 
+      level.failed!
     end
 
     monster_rec = entity_store.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
@@ -79,6 +80,7 @@ class MonsterSystem
     on_moving_tile = moving_tile_below
     tile_below = on_ground = moving_tile_below || ground_below
     # puts "tile below: #{tile_below}"
+    # puts "ON MOVING TILE" if on_moving_tile
 
     if on_ground
       monster_platform.last_grounded_at = input.total_time
@@ -107,7 +109,6 @@ class MonsterSystem
       vel.y = tile_below.vel.y
     end
 
-
     lateral_speed = dt/17.0
     lateral_speed /= 0.5 unless on_ground && !on_moving_tile
     if input.down?(Gosu::KbLeft) || input.down?(Gosu::GpLeft)
@@ -133,8 +134,7 @@ class MonsterSystem
         vel.y = -monster_platform.last_jump * 0.5 if vel.y < -monster_platform.last_jump * 0.5
       end
     elsif input.total_time - monster_platform.last_grounded_at > RUN_FORGIVENESS
-      # apply gravity
-      vel.y += 0.75
+      vel.y += GRAVITY_PER_TICK
     end
 
     if vel.x > MAX_VEL
@@ -183,6 +183,15 @@ class MonsterSystem
         break
       else
         monster_pos.y = new_y
+      end
+    end
+
+    # DeathSystem
+    entity_store.each_entity(Death, Position, Boxed) do |rec|
+      _death, pos, death_box = rec.components
+
+      if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
+        death_at(entity_store, monster_pos.x, monster_pos.y, monster_color.color)
       end
     end
 
@@ -256,7 +265,7 @@ class MonsterSystem
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
 
-      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed, 3)
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
 
@@ -266,7 +275,7 @@ class MonsterSystem
         entity_store.add_entity SoundEffectEvent.new(COLLECT)
         # TODO this is only a box to draw.. need to replace with movabletile?
         eid = Prefab.tile(entity_store: entity_store, x: pos.x, y: pos.y, color: Gosu::Color::GRAY)
-        entity_store.add_component( id:eid, component: movable )
+        entity_store.add_component(id: eid, component: movable )
       end
     end
 
@@ -281,7 +290,7 @@ class MonsterSystem
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
 
-      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed, 3)
         weight = sc.alpha / 255.0 * 0.15
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: weight)
         monster_color.color = blended_color
@@ -302,7 +311,7 @@ class MonsterSystem
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
 
-      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed, 3)
         blended_color = blend_colors(base: monster_color.color, absorbed: sc, weight: 0.15)
         monster_color.color = blended_color
 
@@ -323,7 +332,7 @@ class MonsterSystem
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
 
-      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed, 3)
         monster_color.color = sc
 
         entity_store.remove_entity id: src_id
@@ -350,7 +359,7 @@ class MonsterSystem
       y_off = pos.y - monster_pos.y
       dist = x_off*x_off+y_off*y_off
 
-      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed)
+      if dist < MIN_DIST_SQUARED && boxes_touch?(pos, box, monster_pos, boxed, 3)
         monster_color.color = sc
 
         entity_store.remove_entity id: src_id
@@ -393,13 +402,6 @@ class MonsterSystem
       if rand(3) == 0
         entity_store.add_entity pos.nearby(32,32), EmitParticlesEvent.new(color:subtract_color.color, target: black_hole_id, intensity: 1)
       end
-    end
-
-    # DeathSystem
-    entity_store.each_entity(Death, Position, Boxed) do |rec|
-      death, pos, death_box = rec.components
-
-      death_at(entity_store, monster_pos.x, monster_pos.y, monster_color.color) if boxes_touch?(pos, death_box, monster_pos, boxed, 2)
     end
 
     # MovableTilesSystem
@@ -452,7 +454,7 @@ class MonsterSystem
         if boxes_touch?(monster_pos, boxed, vec(tile_pos.x, tile_pos.y+y_step), tile_box, 0)
           monster_pos.y += y_step
 
-          if in_moving_tile?(moving_tiles, monster_pos.x + x_step, monster_pos.y, w, h) ||
+          if in_moving_tile?(moving_tiles, monster_pos.x, monster_pos.y+y_step, w, h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x+w, monster_pos.y-h) ||
             map.blocked?(monster_pos.x-w, monster_pos.y+h) ||
@@ -468,6 +470,7 @@ class MonsterSystem
   end
 
   private
+
   def death_at(entity_store, x, y, color)
     monster_rec = entity_store.find(Monster, PlatformPosition, Position, JoyColor, Boxed, Velocity).first
     return if monster_rec.nil? # already dead this frame
@@ -503,9 +506,12 @@ class MonsterSystem
     end
   end
 
-  def boxes_touch?(a_pos, a_box, b_pos, b_box, fudge=10)
-    ((a_pos.x - b_pos.x).abs * 2 <= (a_box.width*2 + b_box.width*2+fudge)) &&
-           ((a_pos.y - b_pos.y).abs * 2 <= (a_box.height*2 + b_box.height*2+fudge))
+  # box.w = half width
+  # x,y are center
+  def boxes_touch?(a_pos, a_box, b_pos, b_box, buffer=1)
+    diff = b_pos.to_vec - a_pos.to_vec
+    diff.x.abs <= (a_box.w + b_box.w + buffer) &&
+      diff.y.abs <= (a_box.h + b_box.h + buffer)
   end
 
   def has_exit_color?(map, color)
@@ -530,16 +536,13 @@ class MonsterSystem
     y = pos.y
     w = box.width
     h = box.height
-    py = y+h+1
+    py = y+h+1 # one pixel above, actually
     moving_tiles.each do |rec|
       tile, tile_pos, tile_box = rec.components
       return tile if 
         # on it
         point_in_box?(x-w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
-        point_in_box?(x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
-        # or just 1 px above it
-        point_in_box?(x-w,py+1, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height) ||
-        point_in_box?(x+w,py+1, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
+        point_in_box?(x+w,py, tile_pos.x,tile_pos.y,tile_box.width,tile_box.height)
     end
     nil
   end
