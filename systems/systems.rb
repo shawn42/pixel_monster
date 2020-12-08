@@ -11,6 +11,7 @@ require_relative 'input_mapping_system'
 require_relative 'sound_system'
 require_relative 'background_system'
 require_relative 'render_system'
+require_relative 'editor_system'
 
 CMYK = Struct.new(:c,:m,:y,:k,:a)
 

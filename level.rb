@@ -121,7 +121,7 @@ class Level
   def self.load_level_meta(level, png)
     map = level.map
     map.exit_color = png.get_pixel(0, 0)
-
+   
     command = nil
     (1..png.width-1).each do |c|
       a = png.get_pixel(c, 0).alpha

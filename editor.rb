@@ -17,7 +17,7 @@ require_relative 'scoreboard'
 
 
 Q = GameEcs::Query
-class PixelMonster < Gosu::Window
+class Editor < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
   def initialize
     super(1024,1024,false)
@@ -52,12 +52,35 @@ class PixelMonster < Gosu::Window
 
     delta = relative_delta
     snapshot = take_input_snapshot
-    @last_update = @world.update @entity_store, delta, snapshot
+
+    if snapshot.pressed?(Gosu::KbBacktick)
+      # TODO pull out start_editing code
+      camera = @editor_entity_store.first(Camera, Position)
+      @editor_entity_store.remove_entity(id: camera.id) if camera
+
+      camera = @entity_store.first(Camera, Position)
+      @editor_entity_store.add_entity(*camera.components)
+
+      level = @editor_entity_store.first(Level)
+      @editor_entity_store.remove_entity(id: level.id) if level
+
+      level = @entity_store.first(Level).get(Level)
+      @editor_entity_store.add_entity(level)
+
+      @editor = !@editor
+    end
+
+    if @editor
+      @last_update = @editor_world.update @editor_entity_store, delta, snapshot
+    else
+      @last_update = @world.update @entity_store, delta, snapshot
+    end
     # TODO use last_update[:global_events] for something: like level changes?
   end
 
   def draw
     @render_system.draw self, @entity_store
+    @render_system.draw self, @editor_entity_store if @editor
   end
 
   def draw_box(x1,y1,x2,y2,c,z)
@@ -131,7 +154,12 @@ class PixelMonster < Gosu::Window
   end
 
   def build_world
+    @editor = false
     @entity_store = GameEcs::EntityStore.new
+    @editor_entity_store = GameEcs::EntityStore.new
+    @editor_world = World.new [
+      EditorSystem.new(@entity_store)
+    ]
     @world = World.new [
       InputMappingSystem.new,
       CameraSystem.new,
@@ -195,7 +223,7 @@ if $0 == __FILE__
 # end
 # require 'stackprof'
 # StackProf.run(mode: :cpu, out: './stackprof-cpu-myapp.dump') do
-  $window = PixelMonster.new
+  $window = Editor.new
   $window.show
 end
 # end

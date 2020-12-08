@@ -201,6 +201,12 @@ class RenderSystem
       end
     end
 
+    ed = entity_store.first(EditorState)
+    if ed
+      ed = ed.get(EditorState)
+      target.draw_box(ed.mouse_x-1, ed.mouse_y-1, ed.mouse_x+1, ed.mouse_y+1, ed.current_color, 99_999)
+    end
+
     end
     end
   end

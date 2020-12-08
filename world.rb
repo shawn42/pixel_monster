@@ -9,9 +9,7 @@ class World
       sys.update entity_store, delta, input_snapshot, global_events
     end
 
-    {entity_store: entity_store,
-     global_events: global_events,
-    }
+    {entity_store: entity_store, global_events: global_events}
   end
 
 end
