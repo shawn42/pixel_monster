@@ -20,7 +20,8 @@ Q = GameEcs::Query
 class PixelMonster < Gosu::Window
   MAX_UPDATE_SIZE_IN_MILLIS = 500
   def initialize
-    super(1024,1024,false)
+    full_screen = false
+    super(1024,1024,full_screen)
     level_arg = ARGV[0] || "1"
     if level_arg.start_with? "http"
       level_name = level_arg.split('/').last
